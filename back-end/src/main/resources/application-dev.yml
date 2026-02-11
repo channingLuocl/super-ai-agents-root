@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: super-ai-agents
+  ai:
+    dashscope:
+      api-key: sk-6a0441d2c33d4a37b756e379d8c96a90
+      chat:
+        options:
+          model: qwen-plus
+search-api:
+  api-key: JKnHdC84NBZjqJpb9T3sj7kt

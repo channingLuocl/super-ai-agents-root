@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: super-ai-agents
+  ai:
+    vectorstore:
+      redis:
+        index-name: spring_ai_index
+        initialize-schema: true # 是否初始化向量库索引结构
+        prefix: "doc:" # 向量库key前缀
+    mcp:
+      client:
+        enabled: true
+        name: super-ai-agents-client  # 自定义客户端名称
+        version: 1.0.0
+        request-timeout: 60s  # 将超时时间延长至60秒
+        type: SYNC  # 或 ASYNC（如果使用WebFlux等响应式框架）
+        toolcallback:
+          enabled: true  # 必须启用，否则无法使用MCP工具
+        stdio: # 使用stdio模式，二者取1
+          servers-configuration: classpath:mcp-servers.json
+  #        sse: # 使用sse模式，二者取1
+  #          connections:
+  #            server1:
+  #              url: http://localhost:8127
+  profiles:
+    active: dev
+  data:
+    redis:
+      host: 127.0.0.1 # redis地址
+      port: 6380
+      database: 0
+server:
+  port: 8123
+  servlet:
+    context-path: /api
+# springdoc-openapi
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.example.superaiagents.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh-CN
