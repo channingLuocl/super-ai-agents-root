@@ -30,8 +30,6 @@ public class LoveApp {
     private final ChatClient chatClient;
 
     // AI 恋爱知识库问答功能，通过变量名注入
-//    @Resource(name = "memoryVectorStore")
-//    private VectorStore memoryVectorStore;
     @Resource(name = "redisVectorStore")
     private VectorStore redisVectorStore;
 

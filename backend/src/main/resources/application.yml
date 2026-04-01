@@ -9,7 +9,7 @@ spring:
         prefix: "doc:" # 向量库key前缀
     mcp:
       client:
-        enabled: false  # 暂时禁用MCP客户端，避免启动失败
+        enabled: true  # 启用MCP客户端
         name: super-ai-agents-client  # 自定义客户端名称
         version: 1.0.0
         request-timeout: 60s  # 将超时时间延长至60秒
