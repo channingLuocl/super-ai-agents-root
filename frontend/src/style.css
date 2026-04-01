@@ -1,99 +1,101 @@
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  line-height: 1.6;
+  /* 设计稿颜色系统 */
+  --primary: #00628c;
+  --primary-container: #34b5fa;
+  --primary-fixed: #34b5fa;
+  --primary-dim: #00557b;
+  --on-primary: #e9f4ff;
+  --on-primary-container: #003047;
+
+  --secondary: #4d5d73;
+  --secondary-container: #c8d8f3;
+  --on-secondary: #edf3ff;
+  --on-secondary-container: #3c4c61;
+
+  --tertiary: #883c93;
+  --tertiary-container: #f39cfb;
+  --on-tertiary: #ffeefb;
+  --on-tertiary-container: #60136d;
+
+  --surface: #f5f7f9;
+  --surface-bright: #f5f7f9;
+  --surface-dim: #d0d5d8;
+  --surface-container: #e5e9eb;
+  --surface-container-low: #eef1f3;
+  --surface-container-lowest: #ffffff;
+  --surface-container-high: #dfe3e6;
+  --surface-tint: #00628c;
+
+  --on-surface: #2c2f31;
+  --on-surface-variant: #595c5e;
+  --background: #f5f7f9;
+  --on-background: #2c2f31;
+
+  --outline: #747779;
+  --outline-variant: #abadaf;
+
+  --error: #b31b25;
+  --error-container: #fb5151;
+
+  /* 字体 */
+  --font-headline: 'Space Grotesk', -apple-system, sans-serif;
+  --font-body: 'Manrope', -apple-system, sans-serif;
+
+  font-family: var(--font-body);
+  line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light;
-  color: #2d3748;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-
+  color: var(--on-surface);
+  background-color: var(--background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  
-  /* 现代化配色变量 */
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --primary-color: #667eea;
-  --secondary-color: #764ba2;
-  --text-primary: #2d3748;
-  --text-secondary: #718096;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f7fafc;
-  --border-color: #e2e8f0;
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
-a {
-  font-weight: 500;
-  color: var(--primary-color);
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-a:hover {
-  color: var(--secondary-color);
-}
-
-body {
+* {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-
-button {
-  border-radius: 12px;
-  border: none;
-  padding: 0.75em 1.5em;
-  font-size: 1em;
-  font-weight: 600;
-  font-family: inherit;
-  background: var(--primary-gradient);
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
-}
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-button:focus,
-button:focus-visible {
-  outline: 4px solid rgba(102, 126, 234, 0.3);
-  outline-offset: 2px;
-}
-
-.card {
-  padding: 2em;
-  background: var(--bg-primary);
-  border-radius: 16px;
-  box-shadow: var(--shadow-md);
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 #app {
-  max-width: 100%;
-  margin: 0;
-  text-align: left;
+  width: 100%;
+  height: 100%;
 }
 
-/* 选择文本样式 */
-::selection {
-  background: rgba(102, 126, 234, 0.3);
+a {
+  text-decoration: none;
   color: inherit;
 }
 
-::-moz-selection {
-  background: rgba(102, 126, 234, 0.3);
-  color: inherit;
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea {
+  font-family: inherit;
+  outline: none;
+}
+
+/* 隐藏滚动条 */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
