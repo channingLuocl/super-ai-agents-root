@@ -3,7 +3,7 @@ spring:
     name: super-ai-agents
   ai:
     dashscope:
-      api-key: sk-sp-eacf1be005c54e1eb1108d353fc54bee
+      api-key: sk-b54295f09c8147308af17f975627f459
       chat:
         options:
           model: qwen-plus

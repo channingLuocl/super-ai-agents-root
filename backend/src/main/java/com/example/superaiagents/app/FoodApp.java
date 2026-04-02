@@ -79,14 +79,15 @@ public class FoodApp {
      * 1. AI 基础对话（支持多轮对话记忆）
      *
      * @param message
-     * @param chatId
+     * @param chatId 会话ID，默认 "default"
      * @return
      */
     public String doChat(String message, String chatId) {
+        String conversationId = (chatId == null || chatId.isEmpty()) ? "default" : chatId;
         ChatResponse chatResponse = chatClient
                 .prompt()
                 .user(message)
-                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();
@@ -98,14 +99,15 @@ public class FoodApp {
      * 1. AI 基础对话（支持多轮对话记忆，SSE流式传输）
      *
      * @param message
-     * @param chatId
+     * @param chatId 会话ID，默认 "default"
      * @return
      */
     public Flux<String> doChatByStream(String message, String chatId) {
+        String conversationId = (chatId == null || chatId.isEmpty()) ? "default" : chatId;
         Flux<String> content = chatClient
                 .prompt()
                 .user(message)
-                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .stream()
                 .content();
         return content;
