@@ -119,7 +119,8 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, computed, watch, inject } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { chatWithFood } from '../api'
 import {
@@ -130,6 +131,16 @@ import {
   getConversation,
   updateConversationMessages
 } from '../store/chatStore'
+
+const route = useRoute()
+const router = useRouter()
+
+// 注入刷新对话列表的函数
+const refreshConversations = inject('refreshConversations')
+
+// 全局变量，用于在切换对话时保存正在流式传输的消息
+let streamingMessages = []
+let streamingAiMsgIndex = -1
 
 const messages = ref([])
 const inputMessage = ref('')
@@ -178,6 +189,7 @@ const loadChat = (chatId) => {
   if (chat) {
     currentChatId.value = chatId
     messages.value = chat.messages
+    console.log('loadChat:', { chatId, msgCount: chat.messages.length, isLoading: isLoading.value })
     scrollToBottom()
   }
 }
@@ -191,10 +203,21 @@ const sendMessage = () => {
   const content = inputMessage.value.trim()
   if (!content || isLoading.value) return
 
-  // 如果是第一条消息，创建新对话
+  // 如果是第一条消息，创建新对话并保存用户消息
   if (messages.value.length === 0) {
     const newChat = createNewConversation()
     currentChatId.value = newChat.id
+    router.push(`/chat/${newChat.id}`)
+    // 立即添加用户消息到对话
+    const initialMessages = [{
+      id: Date.now(),
+      content: content,
+      isUser: true,
+      time: new Date()
+    }]
+    updateConversationMessages(newChat.id, initialMessages)
+    // 刷新对话列表
+    if (refreshConversations) refreshConversations()
   }
 
   addMessage(content, true)
@@ -209,40 +232,80 @@ const sendMessage = () => {
     time: new Date()
   })
 
+  // 保存流式消息的引用
+  streamingMessages = messages.value
+  streamingAiMsgIndex = aiMsgIndex
+
   eventSource = chatWithFood(content, currentChatId.value)
 
   eventSource.onmessage = (event) => {
     const data = event.data
     if (data && data !== '[DONE]') {
-      messages.value[aiMsgIndex].content += data
+      // 更新当前显示的消息
+      if (messages.value[aiMsgIndex]) {
+        messages.value[aiMsgIndex].content += data
+      }
+      // 同时更新streamingMessages（切换后需要）
+      if (streamingMessages[streamingAiMsgIndex]) {
+        streamingMessages[streamingAiMsgIndex].content += data
+      }
       scrollToBottom()
     }
     if (data === '[DONE]') {
       isLoading.value = false
       eventSource.close()
+      eventSource = null
       saveCurrentChat()
     }
   }
 
   eventSource.onerror = () => {
-    if (messages.value[aiMsgIndex].content === '') {
+    console.log('SSE onerror 触发, aiMsgIndex:', aiMsgIndex, 'messages.length:', messages.value.length)
+    if (messages.value[aiMsgIndex] && messages.value[aiMsgIndex].content === '') {
       messages.value[aiMsgIndex].content = '抱歉，连接出现错误，请重试。'
     }
     isLoading.value = false
     eventSource.close()
+    eventSource = null
     saveCurrentChat()
   }
 }
 
 onMounted(() => {
-  // 初始化对话
-  let chatId = getCurrentChatId()
+  loadCurrentChat()
+})
+
+// 监听路由参数变化，切换对话
+watch(() => route.params.id, (newId, oldId) => {
+  console.log('路由变化:', { newId, oldId, currentChatId: currentChatId.value, isLoading: isLoading.value })
+  if (newId && newId !== currentChatId.value) {
+    // 切换对话时，完全重置当前UI状态
+    console.log('切换对话，重置状态')
+    if (eventSource) {
+      eventSource.close()
+      eventSource = null
+    }
+    isLoading.value = false
+    streamingMessages = []
+    streamingAiMsgIndex = -1
+
+    // 切换到新对话
+    currentChatId.value = newId
+    messages.value = []
+    loadChat(newId)
+  }
+})
+
+const loadCurrentChat = () => {
+  let chatId = route.params.id || getCurrentChatId()
   if (!chatId) {
     const newChat = createNewConversation()
     chatId = newChat.id
   }
+  currentChatId.value = chatId
+  setCurrentChatId(chatId)
   loadChat(chatId)
-})
+}
 </script>
 
 <style scoped>

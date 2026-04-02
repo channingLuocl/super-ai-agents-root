@@ -6,10 +6,6 @@
         <button class="menu-btn md-hidden">
           <span class="material-symbols-outlined">menu</span>
         </button>
-        <div class="status-badge">
-          <span class="status-dot"></span>
-          <span>GPT4o模型已就绪</span>
-        </div>
       </div>
     </header>
 

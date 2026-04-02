@@ -22,7 +22,7 @@
       <!-- 对话列表 -->
       <div class="chat-list">
         <div
-          v-for="chat in conversations"
+          v-for="chat in conversationsRef"
           :key="chat.id"
           class="chat-item"
           :class="{ active: chat.id === currentChatId }"
@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   getConversations,
@@ -75,8 +75,11 @@ import {
 const router = useRouter()
 const route = useRoute()
 
-const conversations = computed(() => getConversations().filter(c => c.messages.length > 0))
-const currentChatId = computed(() => getCurrentChatId())
+// 从App.vue注入响应式对话列表
+const conversationsRef = inject('conversations')
+
+// 当前对话ID直接来自路由参数
+const currentChatId = computed(() => route.params.id || getCurrentChatId())
 
 const menuItems = [
   {
@@ -96,18 +99,20 @@ const navigateTo = (path) => {
 
 const createChat = () => {
   const newChat = createNewConversation()
-  window.location.reload()
+  conversationsRef.value = getConversations().filter(c => c.messages.length > 0)
+  router.push(`/chat/${newChat.id}`)
 }
 
 const selectChat = (chatId) => {
   setCurrentChatId(chatId)
-  window.location.reload()
+  router.push(`/chat/${chatId}`)
 }
 
 const deleteChat = (chatId) => {
   deleteConversation(chatId)
-  if (currentChatId.value !== chatId) {
-    window.location.reload()
+  conversationsRef.value = getConversations().filter(c => c.messages.length > 0)
+  if (currentChatId.value === chatId) {
+    router.push('/')
   }
 }
 </script>

@@ -6,7 +6,15 @@ const routes = [
     name: 'Home',
     component: () => import('../views/Home.vue'),
     meta: {
-      title: '小迪AI - 工作台'
+      title: '馋嘴小迪 - 美食助手'
+    }
+  },
+  {
+    path: '/chat/:id',
+    name: 'Chat',
+    component: () => import('../views/Home.vue'),
+    meta: {
+      title: '馋嘴小迪 - 美食助手'
     }
   },
   {
@@ -14,7 +22,7 @@ const routes = [
     name: 'Statistics',
     component: () => import('../views/Statistics.vue'),
     meta: {
-      title: '配置与统计中心 - 小迪AI'
+      title: '配置与统计中心 - 馋嘴小迪'
     }
   }
 ]
