@@ -1,38 +1,38 @@
 :root {
-  /* 设计稿颜色系统 */
-  --primary: #00628c;
-  --primary-container: #34b5fa;
-  --primary-fixed: #34b5fa;
-  --primary-dim: #00557b;
-  --on-primary: #e9f4ff;
-  --on-primary-container: #003047;
+  /* 美食主题暖色系 */
+  --primary: #e85a4f;
+  --primary-container: #ff8a65;
+  --primary-fixed: #ff8a65;
+  --primary-dim: #c45a4f;
+  --on-primary: #fff5f2;
+  --on-primary-container: #8a2a1f;
 
-  --secondary: #4d5d73;
-  --secondary-container: #c8d8f3;
-  --on-secondary: #edf3ff;
-  --on-secondary-container: #3c4c61;
+  --secondary: #8b5a2b;
+  --secondary-container: #f5deb3;
+  --on-secondary: #fff8f0;
+  --on-secondary-container: #6b4a1b;
 
-  --tertiary: #883c93;
-  --tertiary-container: #f39cfb;
-  --on-tertiary: #ffeefb;
-  --on-tertiary-container: #60136d;
+  --tertiary: #f4a460;
+  --tertiary-container: #ffcc80;
+  --on-tertiary: #fff5e6;
+  --on-tertiary-container: #d08030;
 
-  --surface: #f5f7f9;
-  --surface-bright: #f5f7f9;
-  --surface-dim: #d0d5d8;
-  --surface-container: #e5e9eb;
-  --surface-container-low: #eef1f3;
+  --surface: #faf8f5;
+  --surface-bright: #faf8f5;
+  --surface-dim: #e8e4df;
+  --surface-container: #f0ece7;
+  --surface-container-low: #f5f2ed;
   --surface-container-lowest: #ffffff;
-  --surface-container-high: #dfe3e6;
-  --surface-tint: #00628c;
+  --surface-container-high: #e5e1dc;
+  --surface-tint: #e85a4f;
 
-  --on-surface: #2c2f31;
-  --on-surface-variant: #595c5e;
-  --background: #f5f7f9;
-  --on-background: #2c2f31;
+  --on-surface: #3d2b1f;
+  --on-surface-variant: #6b5a4f;
+  --background: #faf8f5;
+  --on-background: #3d2b1f;
 
-  --outline: #747779;
-  --outline-variant: #abadaf;
+  --outline: #8b7a6f;
+  --outline-variant: #ab9a8f;
 
   --error: #b31b25;
   --error-container: #fb5151;

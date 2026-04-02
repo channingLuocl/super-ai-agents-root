@@ -15,29 +15,29 @@
         <!-- 欢迎消息 -->
         <div class="welcome-section">
           <div class="welcome-icon">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
           </div>
-          <h2>你好，我是小迪 AI</h2>
-          <p>我可以帮你写作、翻译、分析数据，或者只是陪你聊天。今天有什么我可以帮你的吗？</p>
+          <h2>你好，我是馋嘴小迪</h2>
+          <p>我可以帮你推荐食谱、分析营养、解答烹饪问题，或者帮你规划健康饮食。今天想吃什么？</p>
 
           <!-- 快捷操作 -->
           <div class="quick-actions">
-            <button class="quick-btn" @click="sendQuickMessage('帮我写一篇文章')">
+            <button class="quick-btn" @click="sendQuickMessage('推荐一道家常菜')">
               <div class="quick-icon primary">
-                <span class="material-symbols-outlined">edit_note</span>
+                <span class="material-symbols-outlined">lunch_dining</span>
               </div>
               <div class="quick-text">
-                <div class="quick-title">帮我写一篇文章</div>
-                <div class="quick-desc">关于未来科技趋势的思考</div>
+                <div class="quick-title">推荐一道家常菜</div>
+                <div class="quick-desc">简单易做的美味食谱</div>
               </div>
             </button>
-            <button class="quick-btn" @click="sendQuickMessage('翻译这段文字')">
+            <button class="quick-btn" @click="sendQuickMessage('分析这道菜的营养成分')">
               <div class="quick-icon tertiary">
-                <span class="material-symbols-outlined">translate</span>
+                <span class="material-symbols-outlined">nutrition</span>
               </div>
               <div class="quick-text">
-                <div class="quick-title">翻译这段文字</div>
-                <div class="quick-desc">将中文学术论文翻译成地道英文</div>
+                <div class="quick-title">分析营养成分</div>
+                <div class="quick-desc">了解食物的营养价值</div>
               </div>
             </button>
           </div>
@@ -49,7 +49,7 @@
             <!-- AI 消息 -->
             <template v-if="!msg.isUser">
               <div class="ai-avatar">
-                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant</span>
               </div>
               <div class="ai-bubble">
                 <div class="message-text">{{ msg.content }}</div>
@@ -79,7 +79,7 @@
           <!-- 加载中 -->
           <div v-if="isLoading" class="message-row">
             <div class="ai-avatar">
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant</span>
             </div>
             <div class="ai-bubble">
               <div class="typing-dots">
@@ -101,7 +101,7 @@
           <textarea
             v-model="inputMessage"
             @keydown.enter.exact.prevent="sendMessage"
-            placeholder="给小迪 AI 发送消息..."
+            placeholder="问问馋嘴小迪关于美食的问题..."
             rows="1"
             class="input-textarea hide-scrollbar"
           ></textarea>
@@ -111,16 +111,16 @@
         </div>
         <div class="feature-tags">
           <div class="tag">
-            <span class="material-symbols-outlined">verified_user</span>
-            隐私保护
+            <span class="material-symbols-outlined">restaurant_menu</span>
+            食谱推荐
           </div>
           <div class="tag">
-            <span class="material-symbols-outlined">history_edu</span>
-            创意写作
+            <span class="material-symbols-outlined">nutrition</span>
+            营养分析
           </div>
           <div class="tag">
-            <span class="material-symbols-outlined">code</span>
-            编程辅助
+            <span class="material-symbols-outlined">local_dining</span>
+            烹饪技巧
           </div>
         </div>
       </div>
@@ -215,7 +215,7 @@ onMounted(() => {
   position: fixed;
   top: 0;
   z-index: 50;
-  background: rgba(245, 247, 249, 0.8);
+  background: rgba(250, 248, 245, 0.8);
   backdrop-filter: blur(20px);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   font-family: var(--font-headline);
@@ -269,7 +269,7 @@ onMounted(() => {
   height: 64px;
   border-radius: 24px;
   background: var(--surface-container-lowest);
-  box-shadow: 0 4px 12px rgba(0, 98, 140, 0.05);
+  box-shadow: 0 4px 12px rgba(232, 90, 79, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -324,7 +324,7 @@ onMounted(() => {
 }
 
 .quick-btn:hover {
-  box-shadow: 0 8px 16px rgba(0, 98, 140, 0.05);
+  box-shadow: 0 8px 16px rgba(232, 90, 79, 0.05);
 }
 
 .quick-icon {
@@ -393,7 +393,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 98, 140, 0.2);
+  box-shadow: 0 4px 12px rgba(232, 90, 79, 0.2);
 }
 
 .ai-avatar .material-symbols-outlined {
@@ -404,8 +404,8 @@ onMounted(() => {
 /* AI 消息气泡 */
 .ai-bubble {
   max-width: 85%;
-  background: rgba(52, 181, 250, 0.1);
-  border: 1px solid rgba(52, 181, 250, 0.2);
+  background: rgba(255, 138, 101, 0.1);
+  border: 1px solid rgba(232, 90, 79, 0.2);
   padding: 16px 20px;
   border-radius: 20px;
   border-top-left-radius: 4px;
@@ -425,7 +425,7 @@ onMounted(() => {
   gap: 16px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(52, 181, 250, 0.1);
+  border-top: 1px solid rgba(232, 90, 79, 0.1);
 }
 
 .action-btn {
@@ -507,7 +507,7 @@ onMounted(() => {
   left: 0;
   width: 100%;
   padding: 24px;
-  background: linear-gradient(to top, var(--surface), rgba(245, 247, 249, 0.95), transparent);
+  background: linear-gradient(to top, var(--surface), rgba(250, 248, 245, 0.95), transparent);
 }
 
 .input-wrapper {
@@ -565,7 +565,7 @@ onMounted(() => {
   color: white;
   border-radius: 50%;
   margin-bottom: 6px;
-  box-shadow: 0 4px 12px rgba(0, 98, 140, 0.2);
+  box-shadow: 0 4px 12px rgba(232, 90, 79, 0.2);
   transition: all 0.2s ease;
 }
 

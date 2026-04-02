@@ -5,11 +5,11 @@
       <!-- Logo -->
       <div class="sidebar-header">
         <div class="logo-icon">
-          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant</span>
         </div>
         <div class="logo-text">
-          <h1>小迪 AI</h1>
-          <p>Intelligent Assistant</p>
+          <h1>馋嘴小迪</h1>
+          <p>美食小助手</p>
         </div>
       </div>
 
@@ -189,7 +189,7 @@ const goHome = () => {
 }
 
 .nav-item.active {
-  background: rgba(0, 98, 140, 0.05);
+  background: rgba(232, 90, 79, 0.05);
   color: var(--primary);
 }
 
