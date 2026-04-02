@@ -16,13 +16,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 恋爱大师 Redis 向量存储配置（Bean 形式，带去重/更新）
+ * 美食应用 Redis 向量存储配置（Bean 形式，带去重/更新）
  */
 @Configuration
 public class RedisVectorStoreConfig {
 
     @Resource
-    private LoveAppDocumentLoader loveAppDocumentLoader;
+    private FoodDocumentLoader foodDocumentLoader;
 
     // DashScope Embedding API 批量限制
     private static final int BATCH_SIZE = 10;
@@ -43,7 +43,7 @@ public class RedisVectorStoreConfig {
                 .build();
 
         // 3. 加载 Markdown 文档
-        List<Document> documentList = loveAppDocumentLoader.loadMarkdowns();
+        List<Document> documentList = foodDocumentLoader.loadMarkdowns();
 
         if (documentList.isEmpty()) {
             System.out.println("⚠️  未加载到任何 Markdown 文档，跳过向量库添加");
