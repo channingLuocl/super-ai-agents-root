@@ -207,34 +207,37 @@ const sendMessage = () => {
   const content = inputMessage.value.trim()
   if (!content || isLoading.value) return
 
-  // 如果是第一条消息，创建新对话并保存用户消息
+  // 如果是第一条消息，创建新对话
   if (messages.value.length === 0) {
     const newChat = createNewConversation()
     currentChatId.value = newChat.id
     router.push(`/chat/${newChat.id}`)
-    // 立即添加用户消息到对话
-    const initialMessages = [{
+    // 创建用户消息和AI消息
+    const userMsg = {
       id: Date.now(),
       content: content,
       isUser: true,
       time: new Date()
-    }]
-    updateConversationMessages(newChat.id, initialMessages)
+    }
+    const aiMsg = {
+      id: Date.now() + 1,
+      content: '',
+      isUser: false,
+      time: new Date()
+    }
+    // 保存用户消息到对话
+    updateConversationMessages(newChat.id, [userMsg])
+    messages.value = [userMsg, aiMsg]
     // 刷新对话列表
     if (refreshConversations) refreshConversations()
+  } else {
+    addMessage(content, true)
   }
 
-  addMessage(content, true)
   inputMessage.value = ''
   isLoading.value = true
 
-  const aiMsgIndex = messages.value.length
-  messages.value.push({
-    id: Date.now(),
-    content: '',
-    isUser: false,
-    time: new Date()
-  })
+  const aiMsgIndex = messages.value.findIndex(m => !m.isUser)
 
   // 保存流式消息的引用
   streamingMessages = messages.value
@@ -245,13 +248,8 @@ const sendMessage = () => {
   eventSource.onmessage = (event) => {
     const data = event.data
     if (data && data !== '[DONE]') {
-      // 更新当前显示的消息
       if (messages.value[aiMsgIndex]) {
         messages.value[aiMsgIndex].content += data
-      }
-      // 同时更新streamingMessages（切换后需要）
-      if (streamingMessages[streamingAiMsgIndex]) {
-        streamingMessages[streamingAiMsgIndex].content += data
       }
       scrollToBottom()
     }
