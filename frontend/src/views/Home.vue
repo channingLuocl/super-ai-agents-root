@@ -189,8 +189,12 @@ const loadChat = (chatId) => {
   if (chat) {
     currentChatId.value = chatId
     messages.value = chat.messages
-    console.log('loadChat:', { chatId, msgCount: chat.messages.length, isLoading: isLoading.value })
     scrollToBottom()
+    // 自动聚焦到输入框
+    nextTick(() => {
+      const textarea = document.querySelector('.input-textarea')
+      if (textarea) textarea.focus()
+    })
   }
 }
 
@@ -260,7 +264,6 @@ const sendMessage = () => {
   }
 
   eventSource.onerror = () => {
-    console.log('SSE onerror 触发, aiMsgIndex:', aiMsgIndex, 'messages.length:', messages.value.length)
     if (messages.value[aiMsgIndex] && messages.value[aiMsgIndex].content === '') {
       messages.value[aiMsgIndex].content = '抱歉，连接出现错误，请重试。'
     }
@@ -277,10 +280,8 @@ onMounted(() => {
 
 // 监听路由参数变化，切换对话
 watch(() => route.params.id, (newId, oldId) => {
-  console.log('路由变化:', { newId, oldId, currentChatId: currentChatId.value, isLoading: isLoading.value })
   if (newId && newId !== currentChatId.value) {
-    // 切换对话时，完全重置当前UI状态
-    console.log('切换对话，重置状态')
+    // 关闭之前的SSE连接
     if (eventSource) {
       eventSource.close()
       eventSource = null
