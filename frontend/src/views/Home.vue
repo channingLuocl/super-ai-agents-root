@@ -6,6 +6,7 @@
         <button class="menu-btn md-hidden">
           <span class="material-symbols-outlined">menu</span>
         </button>
+        <span class="chat-title">{{ currentChatTitle }}</span>
       </div>
     </header>
 
@@ -13,7 +14,7 @@
     <section class="chat-canvas hide-scrollbar" ref="chatCanvas">
       <div class="chat-content">
         <!-- 欢迎消息 -->
-        <div class="welcome-section">
+        <div class="welcome-section" v-if="messages.length === 0">
           <div class="welcome-icon">
             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
           </div>
@@ -44,7 +45,7 @@
         </div>
 
         <!-- 聊天记录 -->
-        <div class="messages-area">
+        <div class="messages-area" v-if="messages.length > 0 || isLoading">
           <div v-for="(msg, index) in messages" :key="index" class="message-row" :class="{ 'user-row': msg.isUser }">
             <!-- AI 消息 -->
             <template v-if="!msg.isUser">
@@ -52,7 +53,8 @@
                 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant</span>
               </div>
               <div class="ai-bubble">
-                <div class="message-text">{{ msg.content }}</div>
+                <div class="message-text" v-if="msg.content">{{ msg.content }}</div>
+                <div class="typing-dots" v-else><span></span><span></span><span></span></div>
                 <div class="bubble-actions">
                   <button class="action-btn">
                     <span class="material-symbols-outlined">content_copy</span> 复制
@@ -74,18 +76,6 @@
                 <div class="message-text">{{ msg.content }}</div>
               </div>
             </template>
-          </div>
-
-          <!-- 加载中 -->
-          <div v-if="isLoading" class="message-row">
-            <div class="ai-avatar">
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant</span>
-            </div>
-            <div class="ai-bubble">
-              <div class="typing-dots">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -129,15 +119,35 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
-import { chatWithManus } from '../api'
+import { chatWithFood } from '../api'
+import {
+  getConversations,
+  getCurrentChatId,
+  setCurrentChatId,
+  createNewConversation,
+  getConversation,
+  updateConversationMessages
+} from '../store/chatStore'
 
 const messages = ref([])
 const inputMessage = ref('')
 const isLoading = ref(false)
 const chatCanvas = ref(null)
+const currentChatId = ref(null)
 let eventSource = null
+
+const currentChatTitle = computed(() => {
+  if (messages.value.length === 0) return '馋嘴小迪'
+  const firstUserMsg = messages.value.find(m => m.isUser)
+  if (firstUserMsg) {
+    return firstUserMsg.content.length > 15
+      ? firstUserMsg.content.slice(0, 15) + '...'
+      : firstUserMsg.content
+  }
+  return '馋嘴小迪'
+})
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -157,6 +167,21 @@ const addMessage = (content, isUser = false) => {
   scrollToBottom()
 }
 
+const saveCurrentChat = () => {
+  if (currentChatId.value) {
+    updateConversationMessages(currentChatId.value, messages.value)
+  }
+}
+
+const loadChat = (chatId) => {
+  const chat = getConversation(chatId)
+  if (chat) {
+    currentChatId.value = chatId
+    messages.value = chat.messages
+    scrollToBottom()
+  }
+}
+
 const sendQuickMessage = (text) => {
   inputMessage.value = text
   sendMessage()
@@ -165,6 +190,12 @@ const sendQuickMessage = (text) => {
 const sendMessage = () => {
   const content = inputMessage.value.trim()
   if (!content || isLoading.value) return
+
+  // 如果是第一条消息，创建新对话
+  if (messages.value.length === 0) {
+    const newChat = createNewConversation()
+    currentChatId.value = newChat.id
+  }
 
   addMessage(content, true)
   inputMessage.value = ''
@@ -178,7 +209,7 @@ const sendMessage = () => {
     time: new Date()
   })
 
-  eventSource = chatWithManus(content)
+  eventSource = chatWithFood(content, currentChatId.value)
 
   eventSource.onmessage = (event) => {
     const data = event.data
@@ -189,18 +220,28 @@ const sendMessage = () => {
     if (data === '[DONE]') {
       isLoading.value = false
       eventSource.close()
+      saveCurrentChat()
     }
   }
 
   eventSource.onerror = () => {
-    messages.value[aiMsgIndex].content = '抱歉，连接出现错误，请重试。'
+    if (messages.value[aiMsgIndex].content === '') {
+      messages.value[aiMsgIndex].content = '抱歉，连接出现错误，请重试。'
+    }
     isLoading.value = false
     eventSource.close()
+    saveCurrentChat()
   }
 }
 
 onMounted(() => {
-  // 不添加欢迎消息，因为设计稿中欢迎区域是固定显示的
+  // 初始化对话
+  let chatId = getCurrentChatId()
+  if (!chatId) {
+    const newChat = createNewConversation()
+    chatId = newChat.id
+  }
+  loadChat(chatId)
 })
 </script>
 
@@ -226,6 +267,13 @@ onMounted(() => {
   color: var(--on-surface);
 }
 
+.chat-title {
+  margin-left: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
 .md-hidden {
   display: block;
 }
@@ -240,12 +288,12 @@ onMounted(() => {
 .chat-canvas {
   flex: 1;
   overflow-y: auto;
-  padding: 96px 16px 160px;
+  padding: 80px 16px 160px;
 }
 
 @media (min-width: 768px) {
   .chat-canvas {
-    padding: 96px 0 160px;
+    padding: 80px 0 160px;
   }
 }
 
@@ -261,7 +309,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 48px 24px;
+  padding: 120px 24px 48px;
+  min-height: calc(100vh - 240px);
 }
 
 .welcome-icon {

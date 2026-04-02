@@ -9,7 +9,7 @@ const request = axios.create({
   timeout: 60000
 })
 
-export const connectSSE = (url, params, onMessage, onError) => {
+export const connectSSE = (url, params) => {
   const queryString = Object.keys(params)
     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
     .join('&')
@@ -17,27 +17,13 @@ export const connectSSE = (url, params, onMessage, onError) => {
   const fullUrl = `${API_BASE_URL}${url}?${queryString}`
   const eventSource = new EventSource(fullUrl)
 
-  eventSource.onmessage = event => {
-    let data = event.data
-    if (data === '[DONE]') {
-      if (onMessage) onMessage('[DONE]')
-    } else {
-      if (onMessage) onMessage(data)
-    }
-  }
-
-  eventSource.onerror = error => {
-    if (onError) onError(error)
-    eventSource.close()
-  }
-
   return eventSource
 }
 
-export const chatWithManus = (message) => {
-  return connectSSE('/ai/manus/chat', { message })
+export const chatWithFood = (message, chatId = 'default') => {
+  return connectSSE('/ai/food/chat/stream', { message, chatId })
 }
 
 export default {
-  chatWithManus
+  chatWithFood
 }

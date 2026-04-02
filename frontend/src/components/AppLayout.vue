@@ -14,10 +14,29 @@
       </div>
 
       <!-- New Chat 按钮 -->
-      <button class="new-chat-btn" @click="goHome">
+      <button class="new-chat-btn" @click="createChat">
         <span class="material-symbols-outlined">add_circle</span>
         <span>New Chat</span>
       </button>
+
+      <!-- 对话列表 -->
+      <div class="chat-list">
+        <div
+          v-for="chat in conversations"
+          :key="chat.id"
+          class="chat-item"
+          :class="{ active: chat.id === currentChatId }"
+          @click="selectChat(chat.id)"
+        >
+          <span class="chat-item-icon">
+            <span class="material-symbols-outlined">chat_bubble</span>
+          </span>
+          <span class="chat-item-title">{{ chat.title }}</span>
+          <button class="chat-item-delete" @click.stop="deleteChat(chat.id)">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </div>
 
       <!-- 导航 -->
       <nav class="sidebar-nav">
@@ -45,9 +64,19 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import {
+  getConversations,
+  getCurrentChatId,
+  setCurrentChatId,
+  createNewConversation,
+  deleteConversation
+} from '../store/chatStore'
 
 const router = useRouter()
 const route = useRoute()
+
+const conversations = computed(() => getConversations().filter(c => c.messages.length > 0))
+const currentChatId = computed(() => getCurrentChatId())
 
 const menuItems = [
   {
@@ -65,8 +94,21 @@ const navigateTo = (path) => {
   router.push(path)
 }
 
-const goHome = () => {
-  router.push('/')
+const createChat = () => {
+  const newChat = createNewConversation()
+  window.location.reload()
+}
+
+const selectChat = (chatId) => {
+  setCurrentChatId(chatId)
+  window.location.reload()
+}
+
+const deleteChat = (chatId) => {
+  deleteConversation(chatId)
+  if (currentChatId.value !== chatId) {
+    window.location.reload()
+  }
 }
 </script>
 
@@ -163,9 +205,64 @@ const goHome = () => {
   transform: scale(0.95);
 }
 
+/* 对话列表 */
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.chat-item:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.chat-item.active {
+  background: rgba(232, 90, 79, 0.1);
+}
+
+.chat-item-icon {
+  color: var(--on-surface-variant);
+  font-size: 18px;
+}
+
+.chat-item-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-item-delete {
+  opacity: 0;
+  padding: 4px;
+  color: var(--on-surface-variant);
+  transition: all 0.2s ease;
+}
+
+.chat-item:hover .chat-item-delete {
+  opacity: 1;
+}
+
+.chat-item-delete:hover {
+  color: var(--error);
+}
+
 /* 导航 */
 .sidebar-nav {
-  margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid rgba(89, 92, 94, 0.1);
 }
