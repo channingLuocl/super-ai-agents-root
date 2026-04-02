@@ -99,6 +99,11 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-markdown-document-reader</artifactId>
         </dependency>
+        <!-- Spring AI Redis VectorStore -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-redis-store</artifactId>
+        </dependency>
         <!-- Spring AI MCP Client -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
