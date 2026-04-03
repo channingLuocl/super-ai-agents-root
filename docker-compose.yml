@@ -12,7 +12,7 @@ services:
 
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: super-ai-backend
     restart: always
