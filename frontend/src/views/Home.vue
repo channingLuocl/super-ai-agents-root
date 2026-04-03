@@ -85,13 +85,18 @@
     <footer class="input-footer">
       <div class="input-wrapper">
         <div class="input-box">
-          <button class="attach-btn">
-            <span class="material-symbols-outlined">add</span>
+          <button
+            class="mode-switch-btn"
+            :class="{ active: useRag }"
+            :title="useRag ? '知识库问答模式' : 'AI 对话模式'"
+            @click="useRag = !useRag"
+          >
+            <span class="material-symbols-outlined">{{ useRag ? 'menu_book' : 'restaurant' }}</span>
           </button>
           <textarea
             v-model="inputMessage"
             @keydown.enter.exact.prevent="sendMessage"
-            placeholder="问问馋嘴小迪关于美食的问题..."
+            :placeholder="useRag ? '小迪正在知识库里找答案...' : '问问馋嘴小迪关于美食的问题...'"
             rows="1"
             class="input-textarea hide-scrollbar"
           ></textarea>
@@ -122,7 +127,7 @@
 import { ref, nextTick, onMounted, computed, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
-import { chatWithFood } from '../api'
+import { chatWithFood, chatWithFoodRag } from '../api'
 import {
   getConversations,
   getCurrentChatId,
@@ -147,6 +152,7 @@ const inputMessage = ref('')
 const isLoading = ref(false)
 const chatCanvas = ref(null)
 const currentChatId = ref(null)
+const useRag = ref(false)
 let eventSource = null
 
 const currentChatTitle = computed(() => {
@@ -243,7 +249,9 @@ const sendMessage = () => {
   streamingMessages = messages.value
   streamingAiMsgIndex = aiMsgIndex
 
-  eventSource = chatWithFood(content, currentChatId.value)
+  eventSource = useRag.value
+    ? chatWithFoodRag(content, currentChatId.value)
+    : chatWithFood(content, currentChatId.value)
 
   eventSource.onmessage = (event) => {
     const data = event.data
@@ -648,6 +656,28 @@ const loadCurrentChat = () => {
   padding: 8px;
   color: var(--on-surface-variant);
   margin-bottom: 6px;
+}
+
+.mode-switch-btn {
+  padding: 6px;
+  color: var(--on-surface-variant);
+  margin-bottom: 6px;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+.mode-switch-btn:hover {
+  opacity: 0.8;
+}
+
+.mode-switch-btn.active {
+  color: var(--primary);
+  opacity: 1;
+}
+
+.mode-switch-btn .material-symbols-outlined {
+  font-size: 20px;
 }
 
 .input-textarea {

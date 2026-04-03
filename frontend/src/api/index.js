@@ -24,6 +24,11 @@ export const chatWithFood = (message, chatId = 'default') => {
   return connectSSE('/ai/food/chat/stream', { message, chatId })
 }
 
+export const chatWithFoodRag = (message, chatId = 'default') => {
+  return connectSSE('/ai/food/rag/stream', { message, chatId })
+}
+
 export default {
-  chatWithFood
+  chatWithFood,
+  chatWithFoodRag
 }

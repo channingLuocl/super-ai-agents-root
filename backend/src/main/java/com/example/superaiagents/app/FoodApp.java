@@ -178,6 +178,24 @@ public class FoodApp {
         return content;
     }
 
+    /**
+     * 4.1.1 和 RAG 知识库进行对话（SSE流式）
+     *
+     * @param message
+     * @param chatId
+     * @return
+     */
+    public Flux<String> doChatWithRagStream(String message, String chatId) {
+        String conversationId = (chatId == null || chatId.isEmpty()) ? "default" : chatId;
+        return chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
+                .advisors(new QuestionAnswerAdvisor(redisVectorStore))
+                .stream()
+                .content();
+    }
+
 
     /**
      * 4.2 和 RAG 知识库进行对话，并且在对话之前使用 检索器配置

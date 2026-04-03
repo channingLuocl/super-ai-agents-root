@@ -45,6 +45,14 @@ public class AiController {
     }
 
     /**
+     * SSE 流式调用 RAG 美食知识库问答
+     */
+    @GetMapping(value = "/food/rag/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> doChatWithRagStream(String message, String chatId) {
+        return foodApp.doChatWithRagStream(message, chatId);
+    }
+
+    /**
      * 流式调用 Manus 超级智能体
      */
     @GetMapping("/manus/chat")
