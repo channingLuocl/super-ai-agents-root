@@ -1,3 +1,22 @@
+# 构建阶段
+FROM eclipse-temurin:21-jdk-alpine AS build
+
+WORKDIR /app
+
+# 安装 Maven
+RUN apk add --no-cache maven
+
+# 复制 pom.xml 和源代码
+COPY pom.xml .
+COPY src ./src
+COPY mvnw .
+COPY mvnw.cmd .
+COPY .mvn ./.mvn
+
+# 编译项目（跳过测试）
+RUN mvn clean package -DskipTests
+
+# 运行阶段
 FROM eclipse-temurin:21-jdk-alpine
 
 WORKDIR /app
@@ -5,11 +24,8 @@ WORKDIR /app
 # 安装必要的工具
 RUN apk add --no-cache curl
 
-# 复制 jar 包
-COPY target/*.jar app.jar
-
-# 复制 MCP 配置文件
-COPY src/main/resources/mcp-servers.json /app/mcp-servers.json
+# 从构建阶段复制 jar 包
+COPY --from=build /app/target/*.jar app.jar
 
 # 创建临时目录
 RUN mkdir -p /app/tmp
