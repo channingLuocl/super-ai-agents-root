@@ -96,7 +96,7 @@
           <textarea
             v-model="inputMessage"
             @keydown.enter.exact.prevent="sendMessage"
-            :placeholder="useRag ? '小迪正在知识库里找答案...' : '问问馋嘴小迪关于美食的问题...'"
+            :placeholder="useRag ? '小迪正在知识库里找答案...' : '问问小迪关于美食的问题...'"
             rows="1"
             class="input-textarea hide-scrollbar"
           ></textarea>
@@ -238,12 +238,14 @@ const sendMessage = () => {
     if (refreshConversations) refreshConversations()
   } else {
     addMessage(content, true)
+    // 添加 AI 消息占位
+    addMessage('', false)
   }
 
   inputMessage.value = ''
   isLoading.value = true
 
-  const aiMsgIndex = messages.value.findIndex(m => !m.isUser)
+  const aiMsgIndex = messages.value.length - 1
 
   // 保存流式消息的引用
   streamingMessages = messages.value
