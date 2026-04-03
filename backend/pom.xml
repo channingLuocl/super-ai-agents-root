@@ -104,6 +104,12 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-redis-store</artifactId>
         </dependency>
+        <!-- Jedis Redis 客户端 -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.2.0</version>
+        </dependency>
         <!-- Spring AI MCP Client -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
