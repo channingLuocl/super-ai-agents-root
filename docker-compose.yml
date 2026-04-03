@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: super-ai-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: super-ai-backend
+    restart: always
+    ports:
+      - "8123:8123"
+    depends_on:
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./logs:/app/logs
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: super-ai-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  redis_data:

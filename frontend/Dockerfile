@@ -9,9 +9,9 @@ RUN npm run build
 FROM nginx:alpine
 # 复制构建产物到 nginx 静态文件目录
 COPY --from=build /app/dist /usr/share/nginx/html
-# 复制自定义 nginx 配置替换默认配置
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# 复制生产环境 nginx 配置
+COPY nginx.prod.conf /etc/nginx/conf.d/default.conf
 # 暴露端口
 EXPOSE 80
 # 启动 Nginx
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["nginx", "-g", "daemon off;"]
