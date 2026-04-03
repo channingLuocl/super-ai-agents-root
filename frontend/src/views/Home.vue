@@ -96,7 +96,7 @@
           <textarea
             v-model="inputMessage"
             @keydown.enter.exact.prevent="sendMessage"
-            :placeholder="useRag ? '小迪正在知识库里找答案...' : '问问小迪关于美食的问题...'"
+            :placeholder="useRag ? '小迪正在翻找知识库...' : '问问小迪关于美食的问题...'"
             rows="1"
             class="input-textarea hide-scrollbar"
           ></textarea>
