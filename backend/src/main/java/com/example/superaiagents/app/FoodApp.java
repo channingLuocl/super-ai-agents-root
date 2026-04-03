@@ -191,7 +191,7 @@ public class FoodApp {
                 .prompt()
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
-                .advisors(RetrieverFactoryAdvisor.createLoveAppRagCustomAdvisor(
+                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(
                         redisVectorStore, "美食"
                 ))
                 .call()

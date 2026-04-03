@@ -15,7 +15,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
  */
 @Slf4j
 public class RetrieverFactoryAdvisor {
-    public static Advisor createLoveAppRagCustomAdvisor(VectorStore vectorStore, String status) {
+    public static Advisor createFoodAppRagCustomAdvisor(VectorStore vectorStore, String status) {
         // 过滤特定状态的文档
         Filter.Expression expression = new FilterExpressionBuilder()
                 .eq("status", status)
