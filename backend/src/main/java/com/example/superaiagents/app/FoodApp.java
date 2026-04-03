@@ -4,6 +4,7 @@ package com.example.superaiagents.app;
 import com.example.superaiagents.advisor.RetrieverFactoryAdvisor;
 import com.example.superaiagents.chatmemory.FileBasedChatMemory;
 import com.example.superaiagents.pojo.FoodReport;
+import com.example.superaiagents.rag.QueryExpansionService;
 import com.example.superaiagents.rag.QueryRewriter;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,7 @@ import reactor.core.publisher.Flux;
 @Slf4j
 public class FoodApp {
 
-    private static final String SYSTEM_PROMPT = "扮演深耕美食领域的专家\"馋嘴小迪\"。开场向用户表明身份，告知用户可以询问任何美食相关问题。" +
+    private static final String SYSTEM_PROMPT = "扮演深耕美食领域的专家\"小迪\"。开场向用户表明身份，告知用户可以询问任何美食相关问题。" +
             "围绕以下几个方面与用户交流：\n" +
             "- 菜谱推荐：根据用户的需求推荐菜品做法\n" +
             "- 食材知识：介绍各种食材的选购、保存和营养知识\n" +
@@ -40,6 +41,10 @@ public class FoodApp {
     //    注入查询重写器
     @Resource
     private QueryRewriter queryRewriter;
+
+    //    注入查询扩展服务
+    @Resource
+    private QueryExpansionService queryExpansionService;
 
     //    AI调用工具能力
     @Resource
@@ -162,9 +167,11 @@ public class FoodApp {
      * @return
      */
     public String doChatWithRag(String message, String chatId) {
+        // 查询扩展（使用 LLM 模式）
+        String expandedMessage = queryExpansionService.expand(message, QueryExpansionService.ExpansionMode.LLM);
         ChatResponse chatResponse = chatClient
                 .prompt()
-                .user(message)
+                .user(expandedMessage)
                 // 先配置参数，再添加Advisor（根据SDK支持的链式调用顺序）
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 // 直接传入Advisor实例
@@ -174,7 +181,7 @@ public class FoodApp {
                 .chatResponse();
 
         String content = chatResponse.getResult().getOutput().getText();
-        log.info("加入rag之后的输出 content内容:\n {}", content);
+        log.info("加入rag+查询扩展之后的输出 content内容:\n {}", content);
         return content;
     }
 
@@ -187,9 +194,11 @@ public class FoodApp {
      */
     public Flux<String> doChatWithRagStream(String message, String chatId) {
         String conversationId = (chatId == null || chatId.isEmpty()) ? "default" : chatId;
+        // 查询扩展（使用 LLM 模式）
+        String expandedMessage = queryExpansionService.expand(message, QueryExpansionService.ExpansionMode.LLM);
         return chatClient
                 .prompt()
-                .user(message)
+                .user(expandedMessage)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .advisors(new QuestionAnswerAdvisor(redisVectorStore))
                 .stream()
