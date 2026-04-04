@@ -18,15 +18,7 @@ spring:
         prefix: "doc:"
     mcp:
       client:
-        enabled: true
-        name: super-ai-agents-client
-        version: 1.0.0
-        request-timeout: 60s
-        type: SYNC
-        toolcallback:
-          enabled: true
-        stdio:
-          servers-configuration: classpath:mcp-servers.json
+        enabled: false  # 生产环境暂时禁用 MCP
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:redis}
