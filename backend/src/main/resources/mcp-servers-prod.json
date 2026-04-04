@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "amap-maps": {
-      "command": "mcp-amap",
-      "args": [],
+      "command": "node",
+      "args": ["/usr/local/lib/node_modules/@amap/amap-maps-mcp-server/build/index.js"],
       "env": {
         "AMAP_MAPS_API_KEY": "74d867a5094ef98218f6d87f1f1c8891"
       }
