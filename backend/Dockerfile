@@ -1,17 +1,11 @@
-# 构建阶段
-FROM eclipse-temurin:21-jdk-alpine AS build
+# 构建阶段 - 使用 Maven 官方镜像
+FROM maven:3.9-eclipse-temurin-21-alpine AS build
 
 WORKDIR /app
 
-# 安装 Maven
-RUN apk add --no-cache maven
-
-# 复制 pom.xml 和源代码
+# 复制项目文件
 COPY pom.xml .
 COPY src ./src
-COPY mvnw .
-COPY mvnw.cmd .
-COPY .mvn ./.mvn
 
 # 编译项目（跳过测试）
 RUN mvn clean package -DskipTests
@@ -21,7 +15,7 @@ FROM eclipse-temurin:21-jdk-alpine
 
 WORKDIR /app
 
-# 安装必要的工具
+# 安装 curl
 RUN apk add --no-cache curl
 
 # 从构建阶段复制 jar 包
@@ -32,7 +26,6 @@ RUN mkdir -p /app/tmp
 
 EXPOSE 8123
 
-# 设置时区
 ENV TZ=Asia/Shanghai
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
