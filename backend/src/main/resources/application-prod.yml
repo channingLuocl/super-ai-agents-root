@@ -19,6 +19,8 @@ spring:
     mcp:
       client:
         enabled: false  # 生产环境暂时禁用 MCP
+        toolcallback:
+          enabled: false
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:redis}
