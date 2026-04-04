@@ -5,6 +5,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.DigestUtils;
@@ -24,6 +25,12 @@ public class RedisVectorStoreConfig {
     @Resource
     private FoodDocumentLoader foodDocumentLoader;
 
+    @Value("${spring.data.redis.host}")
+    private String redisHost;
+
+    @Value("${spring.data.redis.port}")
+    private int redisPort;
+
     // DashScope Embedding API 批量限制
     private static final int BATCH_SIZE = 10;
 
@@ -33,7 +40,7 @@ public class RedisVectorStoreConfig {
     @Bean
     public VectorStore redisVectorStore(EmbeddingModel dashscopeEmbeddingModel) {
         // 1. 创建 Jedis 客户端（连接 Redis）
-        JedisPooled jedisPooled = new JedisPooled("127.0.0.1", 6380);
+        JedisPooled jedisPooled = new JedisPooled(redisHost, redisPort);
 
         // 2. 创建 RedisVectorStore
         RedisVectorStore redisVectorStore = RedisVectorStore.builder(jedisPooled, dashscopeEmbeddingModel)
