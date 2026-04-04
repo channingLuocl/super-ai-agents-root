@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 # 复制已编译的 jar 包
-COPY target/*.jar app.jar
+COPY dist/app.jar app.jar
 
 RUN mkdir -p /app/tmp
 
