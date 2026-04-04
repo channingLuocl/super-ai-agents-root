@@ -2,6 +2,15 @@ spring:
   application:
     name: super-ai-agents
   ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:sk-b54295f09c8147308af17f975627f459}
+      chat:
+        options:
+          model: qwen-plus
+      embedding:
+        api-key: ${DASHSCOPE_EMBEDDING_API_KEY:sk-b54295f09c8147308af17f975627f459}
+        options:
+          model: text-embedding-v3
     vectorstore:
       redis:
         index-name: spring_ai_index
@@ -42,3 +51,5 @@ knife4j:
   enable: true
   setting:
     language: zh-CN
+search-api:
+  api-key: ${SEARCH_API_KEY:JKnHdC84NBZjqJpb9T3sj7kt}
