@@ -35,12 +35,20 @@ public class RedisVectorStoreConfig {
     private static final int BATCH_SIZE = 10;
 
     /**
+     * Jedis 客户端 Bean，供其他服务使用
+     */
+    @Bean
+    public JedisPooled jedisPooled() {
+        return new JedisPooled(redisHost, redisPort);
+    }
+
+    /**
      * 初始化 Redis 向量库并加载文档（带去重、唯一ID、更新逻辑）
      */
     @Bean
     public VectorStore redisVectorStore(EmbeddingModel dashscopeEmbeddingModel) {
         // 1. 创建 Jedis 客户端（连接 Redis）
-        JedisPooled jedisPooled = new JedisPooled(redisHost, redisPort);
+        JedisPooled jedisPooled = jedisPooled();
 
         // 2. 创建 RedisVectorStore
         RedisVectorStore redisVectorStore = RedisVectorStore.builder(jedisPooled, dashscopeEmbeddingModel)

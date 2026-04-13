@@ -8,7 +8,73 @@
         </button>
         <span class="chat-title">{{ currentChatTitle }}</span>
       </div>
+      <div class="top-bar-right">
+        <button class="profile-btn" @click="toggleProfile" title="我的偏好">
+          <span class="material-symbols-outlined">person</span>
+        </button>
+      </div>
     </header>
+
+    <!-- 用户画像弹窗 -->
+    <div class="profile-modal" v-if="showProfile" @click.self="toggleProfile">
+      <div class="profile-content">
+        <div class="profile-header">
+          <h3>我的美食偏好</h3>
+          <button class="close-btn" @click="toggleProfile">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="profile-body" v-if="userProfile">
+          <div class="profile-item" v-if="userProfile.taste?.preferred?.length">
+            <span class="profile-label">口味偏好</span>
+            <span class="profile-tags">
+              <span class="tag" v-for="item in userProfile.taste.preferred" :key="item">{{ item }}</span>
+            </span>
+          </div>
+          <div class="profile-item" v-if="userProfile.taste?.disliked?.length">
+            <span class="profile-label">不喜欢</span>
+            <span class="profile-tags">
+              <span class="tag dislike" v-for="item in userProfile.taste.disliked" :key="item">{{ item }}</span>
+            </span>
+          </div>
+          <div class="profile-item" v-if="userProfile.restrictions?.allergies?.length">
+            <span class="profile-label">过敏食材</span>
+            <span class="profile-tags">
+              <span class="tag warning" v-for="item in userProfile.restrictions.allergies" :key="item">{{ item }}</span>
+            </span>
+          </div>
+          <div class="profile-item" v-if="userProfile.restrictions?.avoidIngredients?.length">
+            <span class="profile-label">忌口</span>
+            <span class="profile-tags">
+              <span class="tag" v-for="item in userProfile.restrictions.avoidIngredients" :key="item">{{ item }}</span>
+            </span>
+          </div>
+          <div class="profile-item" v-if="userProfile.favoriteCuisines?.length">
+            <span class="profile-label">喜欢菜系</span>
+            <span class="profile-tags">
+              <span class="tag primary" v-for="item in userProfile.favoriteCuisines" :key="item">{{ item }}</span>
+            </span>
+          </div>
+          <div class="profile-item" v-if="userProfile.cookingLevel">
+            <span class="profile-label">烹饪水平</span>
+            <span class="profile-value">{{ userProfile.cookingLevel }}</span>
+          </div>
+          <div class="profile-item" v-if="userProfile.healthGoals?.length">
+            <span class="profile-label">健康目标</span>
+            <span class="profile-tags">
+              <span class="tag" v-for="item in userProfile.healthGoals" :key="item">{{ item }}</span>
+            </span>
+          </div>
+          <div class="profile-empty" v-if="!userProfile.taste?.preferred?.length && !userProfile.restrictions?.allergies?.length">
+            <p>暂无偏好记录</p>
+            <p class="hint">与我多聊几句，我会记住你的口味偏好哦~</p>
+          </div>
+        </div>
+        <div class="profile-body" v-else>
+          <div class="profile-loading">加载中...</div>
+        </div>
+      </div>
+    </div>
 
     <!-- 对话区域 -->
     <section class="chat-canvas hide-scrollbar" ref="chatCanvas">
@@ -127,7 +193,7 @@
 import { ref, nextTick, onMounted, computed, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
-import { chatWithFood, chatWithFoodRag } from '../api'
+import { chatWithFood, chatWithFoodRag, getUserProfile } from '../api'
 import {
   getConversations,
   getCurrentChatId,
@@ -154,6 +220,10 @@ const chatCanvas = ref(null)
 const currentChatId = ref(null)
 const useRag = ref(false)
 let eventSource = null
+
+// 用户画像
+const userProfile = ref(null)
+const showProfile = ref(false)
 
 const currentChatTitle = computed(() => {
   if (messages.value.length === 0) return '馋嘴小迪'
@@ -314,6 +384,25 @@ const loadCurrentChat = () => {
   currentChatId.value = chatId
   setCurrentChatId(chatId)
   loadChat(chatId)
+}
+
+// 加载用户画像
+const loadUserProfile = async () => {
+  try {
+    const userId = currentChatId.value || 'default'
+    const response = await getUserProfile(userId)
+    userProfile.value = response.data
+  } catch (error) {
+    console.error('Failed to load user profile:', error)
+  }
+}
+
+// 切换画像显示
+const toggleProfile = () => {
+  showProfile.value = !showProfile.value
+  if (showProfile.value && !userProfile.value) {
+    loadUserProfile()
+  }
 }
 </script>
 
@@ -745,5 +834,155 @@ const loadCurrentChat = () => {
 
 .tag .material-symbols-outlined {
   font-size: 14px;
+}
+
+/* 顶部右侧按钮 */
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-btn {
+  padding: 8px;
+  color: var(--on-surface-variant);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.profile-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--primary);
+}
+
+.profile-btn .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* 用户画像弹窗 */
+.profile-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-content {
+  background: var(--surface);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.profile-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--on-surface);
+  margin: 0;
+}
+
+.close-btn {
+  padding: 4px;
+  color: var(--on-surface-variant);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--on-surface);
+}
+
+.profile-body {
+  padding: 24px;
+}
+
+.profile-item {
+  margin-bottom: 20px;
+}
+
+.profile-item:last-child {
+  margin-bottom: 0;
+}
+
+.profile-label {
+  display: block;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-tags .tag {
+  padding: 6px 12px;
+  background: var(--surface-container-lowest);
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--on-surface);
+  opacity: 1;
+}
+
+.profile-tags .tag.primary {
+  background: rgba(232, 90, 79, 0.1);
+  color: var(--primary);
+}
+
+.profile-tags .tag.dislike {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.profile-tags .tag.warning {
+  background: rgba(234, 179, 8, 0.1);
+  color: #ca8a04;
+}
+
+.profile-value {
+  font-size: 14px;
+  color: var(--on-surface);
+}
+
+.profile-empty {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--on-surface-variant);
+}
+
+.profile-empty p {
+  margin: 0 0 8px 0;
+}
+
+.profile-empty .hint {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.profile-loading {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--on-surface-variant);
 }
 </style>

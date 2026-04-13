@@ -3,6 +3,7 @@ package com.example.superaiagents.app;
 
 import com.example.superaiagents.advisor.RetrieverFactoryAdvisor;
 import com.example.superaiagents.chatmemory.FileBasedChatMemory;
+import com.example.superaiagents.memory.MemoryManager;
 import com.example.superaiagents.pojo.FoodReport;
 import com.example.superaiagents.rag.QueryExpansionService;
 import com.example.superaiagents.rag.QueryRewriter;
@@ -12,6 +13,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.tool.ToolCallback;
@@ -20,18 +23,21 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+
 @Component
 @Slf4j
 public class FoodApp {
 
-    private static final String SYSTEM_PROMPT = "扮演深耕美食领域的专家\"小迪\"。开场向用户表明身份，告知用户可以询问任何美食相关问题。" +
+    private static final String SYSTEM_PROMPT_PREFIX = "扮演深耕美食领域的专家\"小迪\"。开场向用户表明身份，告知用户可以询问任何美食相关问题。" +
             "围绕以下几个方面与用户交流：\n" +
             "- 菜谱推荐：根据用户的需求推荐菜品做法\n" +
             "- 食材知识：介绍各种食材的选购、保存和营养知识\n" +
             "- 烹饪技巧：分享烹饪技巧和注意事项\n" +
             "- 美食文化：介绍各地美食特色和饮食文化\n" +
             "- 餐厅推荐：推荐特色餐厅和小吃\n" +
-            "引导用户详述需求，比如口味偏好、预算、场合等，以便给出专属的美食建议。";
+            "引导用户详述需求，比如口味偏好、预算、场合等，以便给出专属的美食建议。\n\n";
+
     private final ChatClient chatClient;
 
     // AI 美食知识库问答功能，通过变量名注入
@@ -54,6 +60,10 @@ public class FoodApp {
     @Resource
     private ToolCallbackProvider toolCallbackProvider;
 
+    // 记忆管理器
+    @Resource
+    private MemoryManager memoryManager;
+
     /**
      * 初始化 ChatClient
      *
@@ -69,7 +79,7 @@ public class FoodApp {
 //                .maxMessages(20)
 //                .build();
         chatClient = ChatClient.builder(dashscopeChatModel)
-                .defaultSystem(SYSTEM_PROMPT)
+                .defaultSystem(SYSTEM_PROMPT_PREFIX)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build()
                         // 自定义日志 Advisor，可按需开启
@@ -81,7 +91,7 @@ public class FoodApp {
     }
 
     /**
-     * 1. AI 基础对话（支持多轮对话记忆）
+     * 1. AI 基础对话（支持多轮对话记忆 + 三层记忆系统）
      *
      * @param message
      * @param chatId 会话ID，默认 "default"
@@ -89,19 +99,37 @@ public class FoodApp {
      */
     public String doChat(String message, String chatId) {
         String conversationId = (chatId == null || chatId.isEmpty()) ? "default" : chatId;
+        String userId = conversationId; // 暂时用 chatId 作为 userId
+
+        // 添加用户消息到短期记忆
+        UserMessage userMessage = new UserMessage(message);
+        memoryManager.addUserMessage(conversationId, userId, userMessage);
+
+        // 获取增强的上下文
+        String enhancedContext = memoryManager.getContextForAI(conversationId, userId);
+        String systemPrompt = SYSTEM_PROMPT_PREFIX + "【上下文】\n" + enhancedContext;
+
         ChatResponse chatResponse = chatClient
                 .prompt()
+                .system(systemPrompt)
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .call()
                 .chatResponse();
+
         String content = chatResponse.getResult().getOutput().getText();
         log.info("AI 回答的内容是: \n{}", content);
+
+        // 添加 AI 消息到短期记忆
+        org.springframework.ai.chat.messages.AssistantMessage aiMessage =
+                new org.springframework.ai.chat.messages.AssistantMessage(content);
+        memoryManager.addAiMessage(conversationId, aiMessage);
+
         return content;
     }
 
     /**
-     * 1. AI 基础对话（支持多轮对话记忆，SSE流式传输）
+     * 1. AI 基础对话（支持多轮对话记忆 + 三层记忆系统，SSE流式传输）
      *
      * @param message
      * @param chatId 会话ID，默认 "default"
@@ -109,12 +137,24 @@ public class FoodApp {
      */
     public Flux<String> doChatByStream(String message, String chatId) {
         String conversationId = (chatId == null || chatId.isEmpty()) ? "default" : chatId;
+        String userId = conversationId;
+
+        // 添加用户消息到短期记忆
+        UserMessage userMessage = new UserMessage(message);
+        memoryManager.addUserMessage(conversationId, userId, userMessage);
+
+        // 获取增强的上下文
+        String enhancedContext = memoryManager.getContextForAI(conversationId, userId);
+        String systemPrompt = SYSTEM_PROMPT_PREFIX + "【上下文】\n" + enhancedContext;
+
         Flux<String> content = chatClient
                 .prompt()
+                .system(systemPrompt)
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .stream()
                 .content();
+
         return content;
     }
 
@@ -128,7 +168,7 @@ public class FoodApp {
     public FoodReport doChatWithReport(String message, String chatId) {
         FoodReport foodReport = chatClient
                 .prompt()
-                .system(SYSTEM_PROMPT + "每次对话后都要生成美食报告，标题为推荐菜品名称，内容为制作建议列表")
+                .system(SYSTEM_PROMPT_PREFIX + "每次对话后都要生成美食报告，标题为推荐菜品名称，内容为制作建议列表")
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 .call()

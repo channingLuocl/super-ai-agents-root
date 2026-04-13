@@ -1,6 +1,7 @@
 package com.example.superaiagents.rag;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
@@ -16,8 +17,9 @@ import java.util.List;
  * 美食应用文档加载器
  */
 @Component
-@Slf4j
 public class FoodDocumentLoader {
+
+    private static final Logger log = LoggerFactory.getLogger(FoodDocumentLoader.class);
 
     private final ResourcePatternResolver resourcePatternResolver;
 

@@ -28,7 +28,13 @@ export const chatWithFoodRag = (message, chatId = 'default') => {
   return connectSSE('/ai/food/rag/stream', { message, chatId })
 }
 
+// 获取用户画像
+export const getUserProfile = (userId) => {
+  return request.get(`/memory/profile/${userId}`)
+}
+
 export default {
   chatWithFood,
-  chatWithFoodRag
+  chatWithFoodRag,
+  getUserProfile
 }
