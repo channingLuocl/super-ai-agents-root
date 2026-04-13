@@ -1,7 +1,9 @@
 package com.example.superaiagents.app;
 
 
+import com.example.superaiagents.advisor.ReReadingAdvisor;
 import com.example.superaiagents.advisor.RetrieverFactoryAdvisor;
+import com.example.superaiagents.advisor.SummaryCompressAdvisor;
 import com.example.superaiagents.chatmemory.FileBasedChatMemory;
 import com.example.superaiagents.memory.MemoryManager;
 import com.example.superaiagents.pojo.FoodReport;
@@ -81,11 +83,13 @@ public class FoodApp {
         chatClient = ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT_PREFIX)
                 .defaultAdvisors(
-                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                        // 对话历史摘要压缩 Advisor
+                        new SummaryCompressAdvisor(dashscopeChatModel)
                         // 自定义日志 Advisor，可按需开启
-//                        new MyLoggerAdvisor()
+//                        , new MyLoggerAdvisor()
                         // 自定义推理增强 Advisor，可按需开启
-//                        new ReReadingAdvisor()
+//                        , new ReReadingAdvisor()
                 )
                 .build();
     }
