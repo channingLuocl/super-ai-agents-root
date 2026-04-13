@@ -99,15 +99,15 @@ public class SummaryCompressAdvisor implements CallAdvisor, StreamAdvisor {
      */
     private String generateSummary(List<Message> oldMessages) {
         if (oldMessages.isEmpty()) {
-            return "无";
+            return "None";
         }
 
         StringBuilder sb = new StringBuilder();
         for (Message msg : oldMessages) {
             if (msg.getMessageType() == MessageType.USER) {
-                sb.append("用户：").append(msg.getText()).append("\n");
+                sb.append("User: ").append(msg.getText()).append("\n");
             } else if (msg.getMessageType() == MessageType.ASSISTANT) {
-                sb.append("AI：").append(msg.getText()).append("\n");
+                sb.append("AI: ").append(msg.getText()).append("\n");
             }
         }
 
@@ -115,11 +115,13 @@ public class SummaryCompressAdvisor implements CallAdvisor, StreamAdvisor {
 
         // 调用 LLM 生成摘要
         String summary = summaryChatClient.prompt()
-                .user("请简要概括以下对话内容，保留关键信息和用户需求（不超过100字）：\n" + historyText)
+                .user("Summarize the conversation below concisely, preserving key entities, "
+                    + "user preferences, and any pending tasks or questions mentioned. "
+                    + "Focus on actionable information.\n\n" + historyText)
                 .call()
                 .content();
 
-        return summary != null ? summary.trim() : "无";
+        return summary != null ? summary.trim() : "None";
     }
 
     @Override
