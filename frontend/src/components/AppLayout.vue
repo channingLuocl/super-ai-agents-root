@@ -65,11 +65,9 @@
 import { computed, inject } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
-  getConversations,
-  getCurrentChatId,
-  setCurrentChatId,
   createNewConversation,
-  deleteConversation
+  deleteConversation,
+  setCurrentChatId
 } from '../store/chatStore'
 
 const router = useRouter()
@@ -79,7 +77,7 @@ const route = useRoute()
 const conversationsRef = inject('conversations')
 
 // 当前对话ID直接来自路由参数
-const currentChatId = computed(() => route.params.id || getCurrentChatId())
+const currentChatId = computed(() => route.params.id || null)
 
 const menuItems = [
   {
@@ -97,20 +95,21 @@ const navigateTo = (path) => {
   router.push(path)
 }
 
-const createChat = () => {
-  const newChat = createNewConversation()
-  conversationsRef.value = getConversations().filter(c => c.messages.length > 0)
+const createChat = async () => {
+  const newChat = await createNewConversation()
   router.push(`/chat/${newChat.id}`)
 }
 
-const selectChat = (chatId) => {
-  setCurrentChatId(chatId)
+const selectChat = async (chatId) => {
+  await setCurrentChatId(chatId)
   router.push(`/chat/${chatId}`)
 }
 
-const deleteChat = (chatId) => {
-  deleteConversation(chatId)
-  conversationsRef.value = getConversations().filter(c => c.messages.length > 0)
+const deleteChat = async (chatId) => {
+  await deleteConversation(chatId)
+  if (conversationsRef) {
+    conversationsRef.value = conversationsRef.value.filter(c => c.id !== chatId)
+  }
   if (currentChatId.value === chatId) {
     router.push('/')
   }

@@ -195,7 +195,6 @@ import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { chatWithFood, chatWithFoodRag, getUserProfile } from '../api'
 import {
-  getConversations,
   getCurrentChatId,
   setCurrentChatId,
   createNewConversation,
@@ -254,40 +253,45 @@ const addMessage = (content, isUser = false) => {
   scrollToBottom()
 }
 
-const saveCurrentChat = () => {
+const saveCurrentChat = async () => {
   if (currentChatId.value) {
-    updateConversationMessages(currentChatId.value, messages.value)
+    await updateConversationMessages(currentChatId.value, messages.value)
   }
 }
 
-const loadChat = (chatId) => {
-  const chat = getConversation(chatId)
+const loadChat = async (chatId) => {
+  const chat = await getConversation(chatId)
   if (chat) {
     currentChatId.value = chatId
     messages.value = chat.messages
-    scrollToBottom()
-    // 自动聚焦到输入框
-    nextTick(() => {
-      const textarea = document.querySelector('.input-textarea')
-      if (textarea) textarea.focus()
-    })
+  } else {
+    currentChatId.value = chatId
+    messages.value = []
   }
+  scrollToBottom()
+  // 自动聚焦到输入框
+  nextTick(() => {
+    const textarea = document.querySelector('.input-textarea')
+    if (textarea) textarea.focus()
+  })
 }
 
-const sendQuickMessage = (text) => {
+const sendQuickMessage = async (text) => {
   inputMessage.value = text
-  sendMessage()
+  await sendMessage()
 }
 
-const sendMessage = () => {
+const sendMessage = async () => {
   const content = inputMessage.value.trim()
   if (!content || isLoading.value) return
 
   // 如果是第一条消息，创建新对话
   if (messages.value.length === 0) {
-    const newChat = createNewConversation()
-    currentChatId.value = newChat.id
-    router.push(`/chat/${newChat.id}`)
+    if (!currentChatId.value) {
+      const newChat = await createNewConversation()
+      currentChatId.value = newChat.id
+      router.push(`/chat/${newChat.id}`)
+    }
     // 创建用户消息和AI消息
     const userMsg = {
       id: Date.now(),
@@ -302,10 +306,10 @@ const sendMessage = () => {
       time: new Date()
     }
     // 保存用户消息到对话
-    updateConversationMessages(newChat.id, [userMsg])
+    await updateConversationMessages(currentChatId.value, [userMsg])
     messages.value = [userMsg, aiMsg]
     // 刷新对话列表
-    if (refreshConversations) refreshConversations()
+    if (refreshConversations) await refreshConversations()
   } else {
     addMessage(content, true)
     // 添加 AI 消息占位
@@ -325,7 +329,7 @@ const sendMessage = () => {
     ? chatWithFoodRag(content, currentChatId.value)
     : chatWithFood(content, currentChatId.value)
 
-  eventSource.onmessage = (event) => {
+  eventSource.onmessage = async (event) => {
     const data = event.data
     if (data && data !== '[DONE]') {
       if (messages.value[aiMsgIndex]) {
@@ -337,18 +341,20 @@ const sendMessage = () => {
       isLoading.value = false
       eventSource.close()
       eventSource = null
-      saveCurrentChat()
+      await saveCurrentChat()
+      if (refreshConversations) await refreshConversations()
     }
   }
 
-  eventSource.onerror = () => {
+  eventSource.onerror = async () => {
     if (messages.value[aiMsgIndex] && messages.value[aiMsgIndex].content === '') {
       messages.value[aiMsgIndex].content = '抱歉，连接出现错误，请重试。'
     }
     isLoading.value = false
     eventSource.close()
     eventSource = null
-    saveCurrentChat()
+    await saveCurrentChat()
+    if (refreshConversations) await refreshConversations()
   }
 }
 
@@ -357,7 +363,7 @@ onMounted(() => {
 })
 
 // 监听路由参数变化，切换对话
-watch(() => route.params.id, (newId, oldId) => {
+watch(() => route.params.id, async (newId, oldId) => {
   if (newId && newId !== currentChatId.value) {
     // 关闭之前的SSE连接
     if (eventSource) {
@@ -371,19 +377,19 @@ watch(() => route.params.id, (newId, oldId) => {
     // 切换到新对话
     currentChatId.value = newId
     messages.value = []
-    loadChat(newId)
+    await loadChat(newId)
   }
 })
 
-const loadCurrentChat = () => {
-  let chatId = route.params.id || getCurrentChatId()
+const loadCurrentChat = async () => {
+  let chatId = route.params.id || await getCurrentChatId()
   if (!chatId) {
-    const newChat = createNewConversation()
+    const newChat = await createNewConversation()
     chatId = newChat.id
   }
   currentChatId.value = chatId
-  setCurrentChatId(chatId)
-  loadChat(chatId)
+  await setCurrentChatId(chatId)
+  await loadChat(chatId)
 }
 
 // 加载用户画像

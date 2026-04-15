@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -50,19 +51,25 @@ public class SessionMemoryService {
      */
     public SessionMemory getOrCreateSession(String sessionId) {
         String key = SESSION_KEY_PREFIX + sessionId;
-        String serialized = jedisPooled.get(key);
+        byte[] redisKey = redisKey(key);
+        byte[] serialized = jedisPooled.get(redisKey);
         if (serialized == null) {
             return new SessionMemory(sessionId);
         }
-        try {
-            byte[] bytes = serialized.getBytes();
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            Input input = new Input(bais);
-            SessionMemory session = kryo.readObject(input, SessionMemory.class);
-            input.close();
+        try (Input input = new Input(new ByteArrayInputStream(serialized))) {
+            SessionMemory session;
+            synchronized (kryo) {
+                session = kryo.readObject(input, SessionMemory.class);
+            }
+            if (!session.hasValidMessages()) {
+                log.warn("Session {} contains invalid message data, clearing session memory", sessionId);
+                jedisPooled.del(redisKey);
+                return new SessionMemory(sessionId);
+            }
             return session;
         } catch (Exception e) {
             log.warn("Failed to deserialize session memory, creating new one: {}", e.getMessage());
+            jedisPooled.del(redisKey);
             return new SessionMemory(sessionId);
         }
     }
@@ -98,7 +105,7 @@ public class SessionMemoryService {
      */
     public void clearSession(String sessionId) {
         String key = SESSION_KEY_PREFIX + sessionId;
-        jedisPooled.del(key);
+        jedisPooled.del(redisKey(key));
         log.info("Session {} 已清空", sessionId);
     }
 
@@ -117,13 +124,19 @@ public class SessionMemoryService {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Output output = new Output(baos);
-            kryo.writeObject(output, session);
+            synchronized (kryo) {
+                kryo.writeObject(output, session);
+            }
             output.close();
             byte[] bytes = baos.toByteArray();
-            jedisPooled.setex(key, SESSION_EXPIRE_SECONDS, new String(bytes));
+            jedisPooled.setex(redisKey(key), SESSION_EXPIRE_SECONDS, bytes);
         } catch (Exception e) {
             log.error("Failed to save session memory: {}", e.getMessage(), e);
         }
+    }
+
+    private byte[] redisKey(String key) {
+        return key.getBytes(StandardCharsets.UTF_8);
     }
 
     /**
@@ -143,7 +156,10 @@ public class SessionMemoryService {
         File file = new File(summaryFilePath);
         if (file.exists()) {
             try (Input input = new Input(new FileInputStream(file))) {
-                CompressedMemory memory = kryo.readObject(input, CompressedMemory.class);
+                CompressedMemory memory;
+                synchronized (kryo) {
+                    memory = kryo.readObject(input, CompressedMemory.class);
+                }
                 log.info("Loaded existing compressed memory for session {}, {} chunks",
                         sessionId, memory.getChunks().size());
                 return memory;
@@ -161,7 +177,9 @@ public class SessionMemoryService {
         String summaryFilePath = System.getProperty("user.dir") + "/tmp/chat-memory/"
                 + compressedMemory.getSessionId() + "_summary.kryo";
         try (Output output = new Output(new FileOutputStream(summaryFilePath))) {
-            kryo.writeObject(output, compressedMemory);
+            synchronized (kryo) {
+                kryo.writeObject(output, compressedMemory);
+            }
             log.info("Persisted compressed memory for session {}", compressedMemory.getSessionId());
         } catch (Exception e) {
             log.error("Failed to persist compressed memory: {}", e.getMessage(), e);

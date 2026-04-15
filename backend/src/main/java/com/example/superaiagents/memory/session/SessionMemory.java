@@ -42,6 +42,14 @@ public class SessionMemory implements Serializable {
         return messages;
     }
 
+    public boolean hasValidMessages() {
+        Object currentMessages = messages;
+        if (!(currentMessages instanceof List<?> messageList)) {
+            return false;
+        }
+        return messageList.stream().allMatch(Message.class::isInstance);
+    }
+
     public void setMessages(List<Message> messages) {
         this.messages = messages;
     }

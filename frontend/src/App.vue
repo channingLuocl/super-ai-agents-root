@@ -1,17 +1,21 @@
 <script setup>
-import { ref, provide } from 'vue'
-import { getConversations } from './store/chatStore'
+import { onMounted, ref, provide } from 'vue'
+import { getVisibleConversations } from './store/chatStore'
 
 // 在顶层提供响应式对话列表
-const conversationsRef = ref(getConversations().filter(c => c.messages.length > 0))
+const conversationsRef = ref([])
 
 // 提供更新函数
-const refreshConversations = () => {
-  conversationsRef.value = getConversations().filter(c => c.messages.length > 0)
+const refreshConversations = async () => {
+  conversationsRef.value = await getVisibleConversations()
 }
 
 provide('conversations', conversationsRef)
 provide('refreshConversations', refreshConversations)
+
+onMounted(() => {
+  refreshConversations()
+})
 </script>
 
 <template>
