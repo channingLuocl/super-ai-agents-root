@@ -67,6 +67,33 @@ public class QueryExpansionService {
     }
 
     /**
+     * RAG 检索专用的保守扩展。
+     * 明确菜名或短查询直接检索，泛化需求才调用 LLM 扩展，避免具体菜名被改写偏移。
+     */
+    public String expandForRag(String query) {
+        if (query == null || query.isBlank()) {
+            return "";
+        }
+        if (!shouldUseLlmExpansion(query)) {
+            log.info("RAG 查询为明确需求，跳过 LLM 扩展: {}", query);
+            return query;
+        }
+        return expand(query, ExpansionMode.LLM);
+    }
+
+    private boolean shouldUseLlmExpansion(String query) {
+        String normalized = query.trim();
+        if (normalized.length() <= 12) {
+            return false;
+        }
+        List<String> broadIntentKeywords = List.of(
+                "推荐", "适合", "有什么", "哪些", "吃什么", "怎么搭配",
+                "早餐", "午餐", "晚餐", "夜宵", "减脂", "高蛋白", "简单", "快手"
+        );
+        return broadIntentKeywords.stream().anyMatch(normalized::contains);
+    }
+
+    /**
      * 规则扩展：同义词词典替换
      */
     public String expandByRule(String query) {

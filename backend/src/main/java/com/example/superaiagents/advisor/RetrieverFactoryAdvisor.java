@@ -7,29 +7,21 @@ import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 /**
  * 创建自定义的 RAG 检索增强顾问的工厂
  */
 @Slf4j
 public class RetrieverFactoryAdvisor {
-    public static Advisor createFoodAppRagCustomAdvisor(VectorStore vectorStore, String status) {
-        // 过滤特定状态的文档
-        Filter.Expression expression = new FilterExpressionBuilder()
-                .eq("status", status)
-                .build();
-        // 创建文档检索器
+    public static Advisor createFoodAppRagCustomAdvisor(VectorStore vectorStore) {
         DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
                 .vectorStore(vectorStore)
-                .filterExpression(expression) // 过滤条件
-                .similarityThreshold(0.5) // 相似度阈值
-                .topK(3) // 返回文档数量
+                .similarityThreshold(0.35)
+                .topK(8)
                 .build();
         return RetrievalAugmentationAdvisor.builder()
                 .documentRetriever(documentRetriever)
-                .queryAugmenter(ContextualQueryAugmenterFactory.createInstance())  // 错误处理机制：当系统无法找到相关文档时,会返回我们自定义的友好提示
+                .queryAugmenter(ContextualQueryAugmenterFactory.createInstance())
                 .build();
     }
 }

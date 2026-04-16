@@ -33,6 +33,11 @@ server:
   port: 8123
   servlet:
     context-path: /api
+rag:
+  index:
+    sync-on-startup: true
+    reset-on-missing-manifest: true
+    batch-size: 10
 # springdoc-openapi
 springdoc:
   swagger-ui:

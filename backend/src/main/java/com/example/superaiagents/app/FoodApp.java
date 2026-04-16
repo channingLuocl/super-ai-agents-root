@@ -9,7 +9,6 @@ import com.example.superaiagents.rag.QueryRewriter;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -33,6 +32,15 @@ public class FoodApp {
             "- 美食文化：介绍各地美食特色和饮食文化\n" +
             "- 餐厅推荐：推荐特色餐厅和小吃\n" +
             "引导用户详述需求，比如口味偏好、预算、场合等，以便给出专属的美食建议。\n\n";
+
+    private static final String RAG_PROMPT_SUFFIX = """
+
+            【知识库回答规则】
+            - 优先基于检索到的菜谱、食材知识和烹饪技巧回答。
+            - 如果检索内容包含图片链接，可以在回答末尾用“相关图片：”列出链接。
+            - 不要编造图片链接、来源链接或不存在于知识库上下文的菜谱细节。
+            - 如果知识库没有找到可靠内容，要明确说明没有找到对应菜谱，再给出通用建议。
+            """;
 
     private final ChatClient chatClient;
 
@@ -181,18 +189,14 @@ public class FoodApp {
     public String doChatWithRag(String message, String chatId) {
         String conversationId = normalizeConversationId(chatId);
         rememberUserMessage(conversationId, message);
-        String systemPrompt = buildSystemPromptWithMemory(conversationId);
-        // 查询扩展（使用 LLM 模式）
-        String expandedMessage = queryExpansionService.expand(message, QueryExpansionService.ExpansionMode.LLM);
+        String systemPrompt = buildRagSystemPrompt(conversationId);
+        String ragMessage = buildRagUserMessage(message);
         ChatResponse chatResponse = chatClient
                 .prompt()
                 .system(systemPrompt)
-                .user(expandedMessage)
-                // 先配置参数，再添加Advisor（根据SDK支持的链式调用顺序）
+                .user(ragMessage)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
-                // 直接传入Advisor实例
-                .advisors(new QuestionAnswerAdvisor(redisVectorStore))
-                // 执行调用
+                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore))
                 .call()
                 .chatResponse();
 
@@ -212,15 +216,14 @@ public class FoodApp {
     public Flux<String> doChatWithRagStream(String message, String chatId) {
         String conversationId = normalizeConversationId(chatId);
         rememberUserMessage(conversationId, message);
-        String systemPrompt = buildSystemPromptWithMemory(conversationId);
-        // 查询扩展（使用 LLM 模式）
-        String expandedMessage = queryExpansionService.expand(message, QueryExpansionService.ExpansionMode.LLM);
+        String systemPrompt = buildRagSystemPrompt(conversationId);
+        String ragMessage = buildRagUserMessage(message);
         return streamAndRemember(conversationId, chatClient
                 .prompt()
                 .system(systemPrompt)
-                .user(expandedMessage)
+                .user(ragMessage)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .advisors(new QuestionAnswerAdvisor(redisVectorStore))
+                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore))
                 .stream()
                 .content());
     }
@@ -242,9 +245,7 @@ public class FoodApp {
                 .system(systemPrompt)
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(
-                        redisVectorStore, "美食"
-                ))
+                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore))
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();
@@ -329,6 +330,26 @@ public class FoodApp {
             return SYSTEM_PROMPT_PREFIX;
         }
         return SYSTEM_PROMPT_PREFIX + "【上下文】\n" + enhancedContext;
+    }
+
+    private String buildRagSystemPrompt(String conversationId) {
+        return buildSystemPromptWithMemory(conversationId) + RAG_PROMPT_SUFFIX;
+    }
+
+    private String buildRagUserMessage(String message) {
+        String retrievalQuery = queryExpansionService.expandForRag(message);
+        if (retrievalQuery == null || retrievalQuery.isBlank() || retrievalQuery.equals(message)) {
+            return message;
+        }
+        return """
+                用户原始问题：
+                %s
+
+                检索辅助表达：
+                %s
+
+                请以用户原始问题为准回答，检索辅助表达只用于帮助召回知识库。
+                """.formatted(message, retrievalQuery);
     }
 
     private Flux<String> streamAndRemember(String conversationId, Flux<String> contentFlux) {

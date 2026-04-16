@@ -10,8 +10,8 @@ public class ContextualQueryAugmenterFactory {
     public static ContextualQueryAugmenter createInstance() {
         PromptTemplate emptyContextPromptTemplate = new PromptTemplate("""
                 你应该输出下面的内容：
-                抱歉，我只能回答美食相关的问题，别的没办法帮到您哦，
-                有问题可以联系客服 https://codefather.cn
+                抱歉，当前知识库没有找到足够可靠的相关菜谱或美食资料。
+                你可以换一个更具体的菜名、食材、口味或烹饪场景再问我。
                 """);
         return ContextualQueryAugmenter.builder()
                 .allowEmptyContext(false)
