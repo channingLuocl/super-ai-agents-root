@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * 中期记忆：压缩后的对话摘要
- * 存储在 .kryo 文件中
+ * 存储在 JSON 文件中
  */
 public class CompressedMemory implements Serializable {
 

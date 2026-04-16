@@ -3,6 +3,7 @@ package com.example.superaiagents.controller;
 import com.example.superaiagents.chat.ChatConversation;
 import com.example.superaiagents.chat.ChatConversationService;
 import com.example.superaiagents.chat.ChatMessage;
+import com.example.superaiagents.memory.MemoryManager;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,9 @@ public class ChatConversationController {
 
     @Resource
     private ChatConversationService chatConversationService;
+
+    @Resource
+    private MemoryManager memoryManager;
 
     @GetMapping("/conversations")
     public List<ChatConversation> getConversations(@RequestParam(defaultValue = "default") String userId) {
@@ -52,6 +56,7 @@ public class ChatConversationController {
     public Map<String, Object> deleteConversation(@PathVariable String chatId,
                                                   @RequestParam(defaultValue = "default") String userId) {
         chatConversationService.deleteConversation(userId, chatId);
+        memoryManager.deleteConversationMemory(chatId, chatId);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("currentChatId", chatConversationService.getCurrentChatId(userId));

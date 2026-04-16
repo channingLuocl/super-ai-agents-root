@@ -9,7 +9,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
  * 文件操作工具类（提供文件读写功能）
  */
 public class FileOperationTool {
-    public final String FILE_SAVE_DIR = System.getProperty("user.dir") + "/tmp";
+    public final String FILE_SAVE_DIR = System.getProperty("user.dir") + "/output";
 
     private final String FILE_DIR = FILE_SAVE_DIR + "/file";
 

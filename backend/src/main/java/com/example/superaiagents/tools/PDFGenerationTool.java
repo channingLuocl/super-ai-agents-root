@@ -17,7 +17,7 @@ import java.io.IOException;
  * PDF生成工具
  */
 public class PDFGenerationTool {
-    public final String FILE_SAVE_DIR = System.getProperty("user.dir") + "/tmp";
+    public final String FILE_SAVE_DIR = System.getProperty("user.dir") + "/output";
 
     @Tool(description = "Generate a PDF file with given content")
     public String generatePDF(

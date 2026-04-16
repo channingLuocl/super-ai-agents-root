@@ -14,7 +14,7 @@ import java.util.Map;
  * 记忆管理接口
  */
 @RestController
-@RequestMapping("/api/memory")
+@RequestMapping("/memory")
 @Slf4j
 public class MemoryController {
 
@@ -50,6 +50,7 @@ public class MemoryController {
     @PostMapping("/compress/{chatId}")
     public Map<String, Object> compressSession(@PathVariable String chatId,
                                                  @RequestParam(defaultValue = "default") String userId) {
+        memoryManager.compressNow(chatId, userId);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("message", "压缩成功");

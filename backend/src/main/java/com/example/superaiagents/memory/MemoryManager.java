@@ -144,6 +144,21 @@ public class MemoryManager {
     }
 
     /**
+     * 手动压缩会话，供管理接口调用
+     */
+    public void compressNow(String sessionId, String userId) {
+        compressSession(sessionId, userId);
+    }
+
+    /**
+     * 删除一个会话关联的短期、中期和长期记忆
+     */
+    public void deleteConversationMemory(String sessionId, String userId) {
+        sessionMemoryService.deleteSessionFiles(sessionId);
+        userProfileService.deleteProfile(userId);
+    }
+
+    /**
      * 获取压缩记忆
      */
     public CompressedMemory getCompressedMemory(String sessionId) {

@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * 短期记忆：存储当前会话的原始消息
- * 存储在 Redis 中
+ * 存储在 JSONL 文件中
  */
 public class SessionMemory implements Serializable {
 
@@ -78,6 +78,7 @@ public class SessionMemory implements Serializable {
 
     public void clearMessages() {
         this.messages.clear();
+        this.messageCount = 0;
         this.lastActiveTime = System.currentTimeMillis();
     }
 
@@ -88,6 +89,7 @@ public class SessionMemory implements Serializable {
             this.messages.clear();
             this.messages.addAll(kept);
         }
+        this.messageCount = this.messages.size();
         this.lastActiveTime = System.currentTimeMillis();
     }
 }
