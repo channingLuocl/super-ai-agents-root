@@ -1,5 +1,7 @@
 package com.example.superaiagents.memory.summary;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +67,7 @@ public class CompressedMemory implements Serializable {
         this.updatedAt = System.currentTimeMillis();
     }
 
+    @JsonIgnore
     public String getFullSummary() {
         StringBuilder sb = new StringBuilder();
         for (DialogueChunk chunk : chunks) {

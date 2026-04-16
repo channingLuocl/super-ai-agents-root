@@ -128,7 +128,7 @@ public class MemoryManager {
             compressedMemory.addChunk(chunk);
             sessionMemoryService.persistCompressedMemory(compressedMemory);
 
-            // 5. 清空 Redis 中的原始消息，保留最后1条作为锚点
+            // 5. 清空短期 JSONL 中的原始消息，保留最后1条作为锚点
             sessionMemoryService.clearSessionKeepLast(sessionId, 1);
 
             // 6. 尝试提取用户偏好
