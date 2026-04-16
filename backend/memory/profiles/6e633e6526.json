@@ -1,0 +1,19 @@
+{
+  "userId" : "6e633e6526",
+  "taste" : {
+    "preferred" : [ "辣" ],
+    "disliked" : [ ]
+  },
+  "restrictions" : {
+    "vegetarian" : false,
+    "vegan" : false,
+    "allergies" : [ ],
+    "avoidIngredients" : [ ]
+  },
+  "cookingLevel" : "intermediate",
+  "healthGoals" : [ ],
+  "favoriteCuisines" : [ "川菜" ],
+  "householdSize" : 2,
+  "favoriteIngredients" : [ ],
+  "updatedAt" : 1776346871050
+}

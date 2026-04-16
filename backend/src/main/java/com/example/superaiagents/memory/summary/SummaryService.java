@@ -8,6 +8,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 摘要服务 - 处理对话压缩和偏好提取
@@ -24,15 +25,27 @@ public class SummaryService {
      * 生成对话摘要
      */
     public String generateSummary(List<Message> messages) {
-        StringBuilder sb = new StringBuilder();
-        for (Message msg : messages) {
-            sb.append(msg.getMessageType().name().toLowerCase())
-              .append(": ")
-              .append(msg.getText())
-              .append("\n");
+        List<Message> userMessages = messages.stream()
+                .filter(msg -> "USER".equalsIgnoreCase(msg.getMessageType().name()))
+                .collect(Collectors.toList());
+        if (userMessages.isEmpty()) {
+            return "用户暂无明确需求";
         }
 
-        String prompt = "请简要概括以下对话的要点，提取用户的关键偏好和需求（50字以内）：\n" + sb.toString();
+        StringBuilder sb = new StringBuilder();
+        for (Message msg : userMessages) {
+            sb.append("- ").append(msg.getText()).append("\n");
+        }
+
+        String prompt = """
+                只根据下面的【用户消息】总结用户本人明确提出的问题、需求、偏好和约束。
+                不要总结或复述 AI 的回答、推荐结果、商家名称、菜品描述。
+                不要把 AI 的建议当成用户偏好；只有用户明确表达的内容才可以写入。
+                50字以内，输出一句自然语言摘要。
+
+                【用户消息】
+                %s
+                """.formatted(sb);
 
         try {
             String summary = chatClient.prompt()
@@ -51,7 +64,7 @@ public class SummaryService {
      */
     public String extractPreferences(String summary) {
         String prompt = """
-            从以下对话摘要中提取用户美食偏好，输出 JSON 格式：
+            只从以下【用户需求摘要】中提取用户明确表达的美食偏好，输出 JSON 格式：
             {
               "taste": {"preferred": ["甜", "辣"], "disliked": ["苦"]},
               "restrictions": {"allergies": ["海鲜"], "avoidIngredients": ["香菜"]},
@@ -60,9 +73,12 @@ public class SummaryService {
               "favoriteCuisines": ["川菜", "粤菜"]
             }
 
-            如果没有明确信息，字段设为空数组或默认值。
+            规则：
+            - 只提取用户明确表达的偏好、忌口、过敏、健康目标、菜系偏好。
+            - 不要根据 AI 推荐的餐厅、菜品或描述反推用户偏好。
+            - 如果没有明确信息，字段设为空数组或默认值。
 
-            对话摘要：
+            【用户需求摘要】：
             """ + summary;
 
         try {
