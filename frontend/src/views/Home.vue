@@ -364,7 +364,7 @@ onMounted(() => {
 
 // 监听路由参数变化，切换对话
 watch(() => route.params.id, async (newId, oldId) => {
-  if (newId && newId !== currentChatId.value) {
+  if (newId !== currentChatId.value) {
     // 关闭之前的SSE连接
     if (eventSource) {
       eventSource.close()
@@ -374,10 +374,15 @@ watch(() => route.params.id, async (newId, oldId) => {
     streamingMessages = []
     streamingAiMsgIndex = -1
 
-    // 切换到新对话
-    currentChatId.value = newId
     messages.value = []
-    await loadChat(newId)
+    if (newId) {
+      // 切换到新对话
+      currentChatId.value = newId
+      await loadChat(newId)
+    } else {
+      currentChatId.value = null
+      await loadCurrentChat()
+    }
   }
 })
 

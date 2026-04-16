@@ -67,6 +67,7 @@ import { useRouter, useRoute } from 'vue-router'
 import {
   createNewConversation,
   deleteConversation,
+  getVisibleConversations,
   setCurrentChatId
 } from '../store/chatStore'
 
@@ -75,6 +76,7 @@ const route = useRoute()
 
 // 从App.vue注入响应式对话列表
 const conversationsRef = inject('conversations')
+const refreshConversations = inject('refreshConversations')
 
 // 当前对话ID直接来自路由参数
 const currentChatId = computed(() => route.params.id || null)
@@ -107,11 +109,16 @@ const selectChat = async (chatId) => {
 
 const deleteChat = async (chatId) => {
   await deleteConversation(chatId)
+  const wasCurrentChat = currentChatId.value === chatId
+  const conversations = await getVisibleConversations()
   if (conversationsRef) {
-    conversationsRef.value = conversationsRef.value.filter(c => c.id !== chatId)
+    conversationsRef.value = conversations
   }
-  if (currentChatId.value === chatId) {
-    router.push('/')
+  if (refreshConversations) await refreshConversations()
+
+  if (wasCurrentChat) {
+    const newChat = await createNewConversation()
+    router.push(`/chat/${newChat.id}`)
   }
 }
 </script>
