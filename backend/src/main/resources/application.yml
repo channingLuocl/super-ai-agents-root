@@ -34,6 +34,8 @@ server:
   servlet:
     context-path: /api
 rag:
+  similarity-threshold: 0.5
+  top-k: 8
   index:
     sync-on-startup: true
     reset-on-missing-manifest: true

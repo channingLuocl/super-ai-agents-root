@@ -9,6 +9,9 @@ import com.example.superaiagents.rag.QueryRewriter;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.rag.Query;
+import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -43,6 +46,12 @@ public class FoodApp {
             """;
 
     private final ChatClient chatClient;
+
+    @Value("${rag.similarity-threshold:0.5}")
+    private double ragSimilarityThreshold;
+
+    @Value("${rag.top-k:8}")
+    private int ragTopK;
 
     // AI 美食知识库问答功能，通过变量名注入
     @Resource(name = "redisVectorStore")
@@ -190,18 +199,17 @@ public class FoodApp {
         String conversationId = normalizeConversationId(chatId);
         rememberUserMessage(conversationId, message);
         String systemPrompt = buildRagSystemPrompt(conversationId);
-        String ragMessage = buildRagUserMessage(message);
         ChatResponse chatResponse = chatClient
                 .prompt()
                 .system(systemPrompt)
-                .user(ragMessage)
+                .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore))
+                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore, ragSimilarityThreshold, ragTopK, buildRagQueryTransformer()))
                 .call()
                 .chatResponse();
 
         String content = chatResponse.getResult().getOutput().getText();
-        log.info("加入rag+查询扩展之后的输出 content内容:\n {}", content);
+        log.info("加入rag+查询改写+查询扩展之后的输出 content内容:\n {}", content);
         rememberAiMessage(conversationId, content);
         return content;
     }
@@ -217,13 +225,12 @@ public class FoodApp {
         String conversationId = normalizeConversationId(chatId);
         rememberUserMessage(conversationId, message);
         String systemPrompt = buildRagSystemPrompt(conversationId);
-        String ragMessage = buildRagUserMessage(message);
         return streamAndRemember(conversationId, chatClient
                 .prompt()
                 .system(systemPrompt)
-                .user(ragMessage)
+                .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore))
+                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore, ragSimilarityThreshold, ragTopK, buildRagQueryTransformer()))
                 .stream()
                 .content());
     }
@@ -245,7 +252,7 @@ public class FoodApp {
                 .system(systemPrompt)
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore))
+                .advisors(RetrieverFactoryAdvisor.createFoodAppRagCustomAdvisor(redisVectorStore, ragSimilarityThreshold, ragTopK, buildRagQueryTransformer()))
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();
@@ -336,20 +343,14 @@ public class FoodApp {
         return buildSystemPromptWithMemory(conversationId) + RAG_PROMPT_SUFFIX;
     }
 
-    private String buildRagUserMessage(String message) {
-        String retrievalQuery = queryExpansionService.expandForRag(message);
-        if (retrievalQuery == null || retrievalQuery.isBlank() || retrievalQuery.equals(message)) {
-            return message;
-        }
-        return """
-                用户原始问题：
-                %s
-
-                检索辅助表达：
-                %s
-
-                请以用户原始问题为准回答，检索辅助表达只用于帮助召回知识库。
-                """.formatted(message, retrievalQuery);
+    private QueryTransformer buildRagQueryTransformer() {
+        return query -> {
+            String rewritten = queryRewriter.doQueryRewrite(query.text());
+            String expanded = queryExpansionService.expandForRag(rewritten);
+            String finalQuery = (expanded == null || expanded.isBlank() || expanded.equals(rewritten))
+                    ? rewritten : expanded;
+            return new Query(finalQuery);
+        };
     }
 
     private Flux<String> streamAndRemember(String conversationId, Flux<String> contentFlux) {

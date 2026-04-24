@@ -47,6 +47,9 @@ springdoc:
     - group: 'default'
       paths-to-match: '/**'
       packages-to-scan: com.example.superaiagents.controller
+rag:
+  similarity-threshold: 0.5
+  top-k: 8
 knife4j:
   enable: true
   setting:

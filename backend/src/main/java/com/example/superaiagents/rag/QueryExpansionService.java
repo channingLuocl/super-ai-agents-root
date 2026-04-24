@@ -54,15 +54,11 @@ public class QueryExpansionService {
      * 主方法：根据模式扩展查询
      */
     public String expand(String query, ExpansionMode mode) {
-        log.info("========== 查询扩展 ==========");
-        log.info("【扩展前】{}", query);
         String expanded = switch (mode) {
             case RULE -> expandByRule(query);
             case LLM -> expandByLLM(query);
             case PRF -> expandByPRF(query, null);
         };
-        log.info("【扩展后】{}", expanded);
-        log.info("================================");
         return expanded;
     }
 
@@ -75,22 +71,26 @@ public class QueryExpansionService {
             return "";
         }
         if (!shouldUseLlmExpansion(query)) {
-            log.info("RAG 查询为明确需求，跳过 LLM 扩展: {}", query);
+            log.info("查询扩展: [{}] 为明确菜名，跳过", query);
             return query;
         }
-        return expand(query, ExpansionMode.LLM);
+        String expanded = expand(query, ExpansionMode.LLM);
+        log.info("查询扩展: [{}] -> [{}]", query, expanded);
+        return expanded;
     }
 
     private boolean shouldUseLlmExpansion(String query) {
         String normalized = query.trim();
-        if (normalized.length() <= 12) {
-            return false;
-        }
         List<String> broadIntentKeywords = List.of(
                 "推荐", "适合", "有什么", "哪些", "吃什么", "怎么搭配",
                 "早餐", "午餐", "晚餐", "夜宵", "减脂", "高蛋白", "简单", "快手"
         );
-        return broadIntentKeywords.stream().anyMatch(normalized::contains);
+        // 含泛化意图词则扩展，优先级高于长度判断
+        if (broadIntentKeywords.stream().anyMatch(normalized::contains)) {
+            return true;
+        }
+        // 无泛化意图的短查询（具体菜名）跳过扩展
+        return normalized.length() > 12;
     }
 
     /**
@@ -104,7 +104,6 @@ public class QueryExpansionService {
                 result.append(String.join(" | ", entry.getValue()));
             }
         }
-        log.info("规则扩展: {} -> {}", query, result);
         return result.toString();
     }
 
@@ -126,9 +125,7 @@ public class QueryExpansionService {
 
         // 清理响应，只保留扩展部分
         String expanded = response.replaceAll("扩展查询（用\\|分隔）：", "").trim();
-        String result = query + " | " + expanded;
-        log.info("LLM扩展: {} -> {}", query, result);
-        return result;
+        return query + " | " + expanded;
     }
 
     /**
