@@ -3,9 +3,6 @@ package com.example.superaiagents.rag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.rag.Query;
-import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
-import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,20 +14,29 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class QueryRewriter {
 
-    private final QueryTransformer queryTransformer;
+    private static final String QUERY_REWRITE_SYSTEM_PROMPT = """
+            你是 RAG 检索查询改写器。将用户问题改写成适合中文菜谱知识库向量检索的短查询。
+            规则：
+            1. 只输出一行纯查询文本。
+            2. 禁止输出解释、Markdown、标题、编号、英文说明或 <think> 内容。
+            3. 如果原问题已经是明确菜名或明确做法，保留核心菜名并补充“做法/步骤”等检索词。
+            4. 不要扩展成多段，不要使用冒号说明。
+            """;
+
+    private final ChatClient chatClient;
 
     public QueryRewriter(ChatModel chatModel) {
-        ChatClient.Builder builder = ChatClient.builder(chatModel);
-        // 创建查询重写转换器
-        queryTransformer = RewriteQueryTransformer.builder()
-                .chatClientBuilder(builder)
+        chatClient = ChatClient.builder(chatModel)
+                .defaultSystem(QUERY_REWRITE_SYSTEM_PROMPT)
                 .build();
     }
 
     public String doQueryRewrite(String prompt) {
-        Query query = new Query(prompt);
-        Query transformedQuery = queryTransformer.transform(query);
-        String rewritten = transformedQuery.text();
+        String response = chatClient.prompt()
+                .user("原始问题：" + prompt)
+                .call()
+                .content();
+        String rewritten = RagQueryTextCleaner.cleanSingleQuery(response, prompt);
         log.info("查询改写: [{}] -> [{}]", prompt, rewritten);
         return rewritten;
     }

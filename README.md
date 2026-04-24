@@ -34,20 +34,18 @@ cd ../..
 
 ### 3. 配置 API Key
 
-修改 `backend/src/main/resources/application-dev.yml`：
+直接修改 `backend/src/main/resources/application.yml` 中的以下配置：
 
 ```yaml
 spring:
   ai:
+    openai:
+      api-key: 你的MiniMax-API-Key
+      base-url: https://api.minimaxi.com
     dashscope:
       api-key: 你的阿里云百练API-Key
-      chat:
-        options:
-          model: qwen-plus
-      embedding:
-        api-key: 你的Embedding-API-Key
-        options:
-          model: text-embedding-v3
+search-api:
+  api-key: 你的搜索API-Key
 ```
 
 ### 4. 编译运行主应用

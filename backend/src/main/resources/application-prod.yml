@@ -1,58 +1,25 @@
 spring:
-  application:
-    name: super-ai-agents
   ai:
     openai:
-      api-key: ${MINIMAX_API_KEY}
-      base-url: https://api.minimaxi.com/v1
+      api-key: sk-cp-gMcxJyxpm1mwpParaUnuBhWPaNxEw2kwqT8Fsm7PX5SH7_PDjbdECJ37v8_aj3fkxobChOjUxvVLx0q9EiTn7wbEY4buhgsSfGbpklnREV1qizz_N1XM5-k
       chat:
         options:
           model: MiniMax-Text-01
-      embedding:
-        options:
-          model: embo-01
-    vectorstore:
-      redis:
-        index-name: spring_ai_index
-        initialize-schema: true
-        prefix: "doc:"
+    dashscope:
+      api-key: sk-b54295f09c8147308af17f975627f459
     mcp:
       client:
-        enabled: true
-        name: super-ai-agents-client
-        version: 1.0.0
         request-timeout: 120s
-        type: SYNC
-        toolcallback:
-          enabled: true
         stdio:
           servers-configuration: classpath:mcp-servers-prod.json
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:redis}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
-      database: 0
-server:
-  port: 8123
-  servlet:
-    context-path: /api
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-  api-docs:
-    path: /v3/api-docs
-  group-configs:
-    - group: 'default'
-      paths-to-match: '/**'
-      packages-to-scan: com.example.superaiagents.controller
+      host: redis
+      port: 6379
+
 rag:
-  similarity-threshold: 0.5
-  top-k: 8
-knife4j:
-  enable: true
-  setting:
-    language: zh-CN
+  index:
+    sync-on-startup: true
+
 search-api:
-  api-key: ${SEARCH_API_KEY:JKnHdC84NBZjqJpb9T3sj7kt}
+  api-key: JKnHdC84NBZjqJpb9T3sj7kt

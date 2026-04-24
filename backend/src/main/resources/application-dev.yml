@@ -1,15 +1,20 @@
 spring:
-  application:
-    name: super-ai-agents
   ai:
     openai:
-      api-key: <your-minimax-api-key>
-      base-url: https://api.minimaxi.com/v1
+      api-key: sk-cp-gMcxJyxpm1mwpParaUnuBhWPaNxEw2kwqT8Fsm7PX5SH7_PDjbdECJ37v8_aj3fkxobChOjUxvVLx0q9EiTn7wbEY4buhgsSfGbpklnREV1qizz_N1XM5-k
       chat:
         options:
-          model: MiniMax-Text-01
-      embedding:
-        options:
-          model: embo-01
+          model: MiniMax-M2.7
+    dashscope:
+      api-key: sk-b54295f09c8147308af17f975627f459
+    mcp:
+      client:
+        stdio:
+          servers-configuration: classpath:mcp-servers-dev.json
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6380
+
 search-api:
   api-key: JKnHdC84NBZjqJpb9T3sj7kt

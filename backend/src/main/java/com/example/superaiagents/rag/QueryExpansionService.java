@@ -112,9 +112,9 @@ public class QueryExpansionService {
      */
     public String expandByLLM(String query) {
         String prompt = """
-                对于以下查询，生成3-5个不同的表述方式，用|分隔保持语义一致：
+                你是 RAG 检索查询扩展器。对于以下查询，生成3-5个不同的中文检索表述。
+                只输出一行，用|分隔。禁止输出解释、Markdown、标题、编号、英文说明或 <think> 内容。
                 原始查询：%s
-                扩展查询（用|分隔）：
                 """.formatted(query);
 
         ChatClient chatClient = ChatClient.builder(chatModel).build();
@@ -123,9 +123,7 @@ public class QueryExpansionService {
                 .call()
                 .content();
 
-        // 清理响应，只保留扩展部分
-        String expanded = response.replaceAll("扩展查询（用\\|分隔）：", "").trim();
-        return query + " | " + expanded;
+        return RagQueryTextCleaner.cleanExpandedQueries(response, query);
     }
 
     /**

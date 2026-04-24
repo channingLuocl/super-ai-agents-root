@@ -37,9 +37,9 @@ apt install git -y
 git clone 你的仓库地址
 cd super-ai-agents-root
 
-# 配置 API Key（重要！）
+# 配置 API Key
 # 编辑 backend/src/main/resources/application.yml
-# 填入你的阿里云百练 API Key 和搜索 API Key
+# 填入 MiniMax、阿里云百练和搜索 API Key
 
 # 构建并启动
 docker compose up -d --build

@@ -1,38 +1,52 @@
 spring:
   application:
     name: super-ai-agents
+  profiles:
+    active: dev
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentAutoConfiguration
   ai:
+    model:
+      chat: openai
+    openai:
+      base-url: https://api.minimaxi.com
+      embedding:
+        enabled: false
+      chat:
+        completions-path: /v1/chat/completions
+        options:
+          model: MiniMax-M2.7
+    dashscope:
+      embedding:
+        options:
+          model: text-embedding-v3
     vectorstore:
       redis:
         index-name: spring_ai_index
-        initialize-schema: true # 是否初始化向量库索引结构
-        prefix: "doc:" # 向量库key前缀
+        initialize-schema: true
+        prefix: "doc:"
     mcp:
       client:
-        enabled: true  # 启用MCP客户端
-        name: super-ai-agents-client  # 自定义客户端名称
+        enabled: true
+        name: super-ai-agents-client
         version: 1.0.0
-        request-timeout: 60s  # 将超时时间延长至60秒
-        type: SYNC  # 或 ASYNC（如果使用WebFlux等响应式框架）
+        request-timeout: 60s
+        type: SYNC
         toolcallback:
-          enabled: true  # 必须启用，否则无法使用MCP工具
-        stdio: # 使用stdio模式，二者取1
-          servers-configuration: classpath:mcp-servers.json
-  #        sse: # 使用sse模式，二者取1
-  #          connections:
-  #            server1:
-  #              url: http://localhost:8127
-  profiles:
-    active: dev
+          enabled: true
   data:
     redis:
-      host: 127.0.0.1 # redis地址
+      host: 127.0.0.1
       port: 6380
       database: 0
+
 server:
   port: 8123
   servlet:
     context-path: /api
+
 rag:
   similarity-threshold: 0.5
   top-k: 8
@@ -40,7 +54,7 @@ rag:
     sync-on-startup: true
     reset-on-missing-manifest: true
     batch-size: 10
-# springdoc-openapi
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -49,10 +63,10 @@ springdoc:
   api-docs:
     path: /v3/api-docs
   group-configs:
-    - group: 'default'
-      paths-to-match: '/**'
+    - group: default
+      paths-to-match: "/**"
       packages-to-scan: com.example.superaiagents.controller
-# knife4j
+
 knife4j:
   enable: true
   setting:
