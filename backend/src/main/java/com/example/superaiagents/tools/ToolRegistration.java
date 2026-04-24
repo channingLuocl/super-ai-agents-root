@@ -19,22 +19,17 @@ public class ToolRegistration {
 
     @Bean
     public ToolCallback[] allTools() {
-        FileOperationTool fileOperationTool = new FileOperationTool();
         WebSearchTool webSearchTool = new WebSearchTool(searchApiKey);
         WebScrapingTool webScrapingTool = new WebScrapingTool();
         ResourceDownloadTool resourceDownloadTool = new ResourceDownloadTool();
-        TerminalOperationTool terminalOperationTool = new TerminalOperationTool();
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
-        EmailSendTool emailSendTool = new EmailSendTool();
         TerminateTool terminateTool = new TerminateTool();
+        // Default tools for the food recommendation agent. Keep high-risk tools out of this set.
         return ToolCallbacks.from(
-                fileOperationTool,
                 webSearchTool,
                 webScrapingTool,
                 resourceDownloadTool,
-                terminalOperationTool,
                 pdfGenerationTool,
-                emailSendTool,
                 terminateTool
         );
     }
