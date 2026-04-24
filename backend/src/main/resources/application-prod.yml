@@ -2,15 +2,15 @@ spring:
   application:
     name: super-ai-agents
   ai:
-    dashscope:
-      api-key: ${DASHSCOPE_API_KEY:sk-b54295f09c8147308af17f975627f459}
+    openai:
+      api-key: ${MINIMAX_API_KEY}
+      base-url: https://api.minimaxi.com/v1
       chat:
         options:
-          model: qwen-plus
+          model: MiniMax-Text-01
       embedding:
-        api-key: ${DASHSCOPE_EMBEDDING_API_KEY:sk-b54295f09c8147308af17f975627f459}
         options:
-          model: text-embedding-v3
+          model: embo-01
     vectorstore:
       redis:
         index-name: spring_ai_index

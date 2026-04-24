@@ -26,7 +26,7 @@ public class AiController {
     private ToolCallback[] allTools;
 
     @Resource
-    private ChatModel dashscopeChatModel;
+    private ChatModel chatModel;
 
     /**
      * 同步调用 AI 美食助手
@@ -57,7 +57,7 @@ public class AiController {
      */
     @GetMapping("/manus/chat")
     public SseEmitter doChatWithManus(String message) {
-        MySuperManus yuManus = new MySuperManus(allTools, dashscopeChatModel);
+        MySuperManus yuManus = new MySuperManus(allTools, chatModel);
         return yuManus.runStream(message);
     }
 }

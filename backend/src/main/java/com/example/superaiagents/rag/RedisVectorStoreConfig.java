@@ -33,10 +33,10 @@ public class RedisVectorStoreConfig {
      * 初始化 Redis 向量库。文档写入由 RagIndexSynchronizer 在应用启动完成后执行。
      */
     @Bean
-    public VectorStore redisVectorStore(EmbeddingModel dashscopeEmbeddingModel) {
+    public VectorStore redisVectorStore(EmbeddingModel embeddingModel) {
         JedisPooled jedisPooled = jedisPooled();
 
-        return RedisVectorStore.builder(jedisPooled, dashscopeEmbeddingModel)
+        return RedisVectorStore.builder(jedisPooled, embeddingModel)
                 .indexName("spring_ai_index")
                 .prefix("doc:")
                 .metadataFields(

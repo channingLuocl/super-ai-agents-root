@@ -17,8 +17,8 @@ public class QueryRewriter {
 
     private final QueryTransformer queryTransformer;
 
-    public QueryRewriter(ChatModel dashscopeChatModel) {  //构造函数
-        ChatClient.Builder builder = ChatClient.builder(dashscopeChatModel);
+    public QueryRewriter(ChatModel chatModel) {
+        ChatClient.Builder builder = ChatClient.builder(chatModel);
         // 创建查询重写转换器
         queryTransformer = RewriteQueryTransformer.builder()
                 .chatClientBuilder(builder)

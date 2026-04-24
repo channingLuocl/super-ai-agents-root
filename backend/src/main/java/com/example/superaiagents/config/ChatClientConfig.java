@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class ChatClientConfig {
 
     @Bean
-    public ChatClient chatClient(ChatModel dashscopeChatModel) {
-        return ChatClient.builder(dashscopeChatModel).build();
+    public ChatClient chatClient(ChatModel chatModel) {
+        return ChatClient.builder(chatModel).build();
     }
 }

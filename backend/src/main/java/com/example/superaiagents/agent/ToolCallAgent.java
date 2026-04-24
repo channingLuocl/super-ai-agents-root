@@ -2,7 +2,7 @@ package com.example.superaiagents.agent;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import com.example.superaiagents.agent.model.AgentState;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -43,8 +43,8 @@ public class ToolCallAgent extends ReActAgent {
         this.availableTools = availableTools;
         this.toolCallingManager = ToolCallingManager.builder().build();
         // 禁用 Spring AI 内置的工具调用机制，自己维护选项和消息上下文
-        this.chatOptions = DashScopeChatOptions.builder()
-                .withInternalToolExecutionEnabled(false)
+        this.chatOptions = OpenAiChatOptions.builder()
+                .internalToolExecutionEnabled(false)
                 .build();
     }
 

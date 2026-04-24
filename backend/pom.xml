@@ -32,13 +32,6 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-bom</artifactId>
-                <version>1.0.0.2</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-bom</artifactId>
                 <version>1.0.0</version>
@@ -84,16 +77,10 @@
         </dependency>
 
         <!-- 6. Spring AI -->
-        <!-- 阿里云百练、灵积大模型服务 -->
+        <!-- OpenAI / MiniMax（OpenAI 兼容接口）-->
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>dashscope-sdk-java</artifactId>
-            <version>2.19.1</version>
-        </dependency>
-        <!-- Spring AI Alibaba -->
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         </dependency>
         <!-- Spring AI Redis VectorStore -->
         <dependency>
