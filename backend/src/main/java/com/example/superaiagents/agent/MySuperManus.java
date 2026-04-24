@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class MySuperManus extends ToolCallAgent {
 
-    public MySuperManus(ToolCallback[] allTools, ChatModel dashscopeChatModel) {
+    public MySuperManus(ToolCallback[] allTools, ChatModel chatModel) {
         super(allTools);
         this.setName("mySuperManus");
         String SYSTEM_PROMPT = """
@@ -33,7 +33,7 @@ public class MySuperManus extends ToolCallAgent {
         this.setNextStepPrompt(NEXT_STEP_PROMPT);
         this.setMaxSteps(20);
         // 初始化 AI 对话客户端
-        ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
+        ChatClient chatClient = ChatClient.builder(chatModel)
 //                .defaultAdvisors(new MyLoggerAdvisor())
                 .build();
         this.setChatClient(chatClient);

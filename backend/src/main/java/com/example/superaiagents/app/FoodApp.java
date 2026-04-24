@@ -77,13 +77,8 @@ public class FoodApp {
     @Resource
     private MemoryManager memoryManager;
 
-    /**
-     * 初始化 ChatClient
-     *
-     * @param dashscopeChatModel
-     */
-    public FoodApp(ChatModel dashscopeChatModel) {
-        chatClient = ChatClient.builder(dashscopeChatModel)
+    public FoodApp(ChatModel chatModel) {
+        chatClient = ChatClient.builder(chatModel)
                 .defaultSystem(SYSTEM_PROMPT_PREFIX)
                 .build();
     }

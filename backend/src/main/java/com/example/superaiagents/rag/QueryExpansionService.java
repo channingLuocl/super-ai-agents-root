@@ -22,7 +22,7 @@ import java.util.Set;
 public class QueryExpansionService {
 
     @Resource
-    private ChatModel dashscopeChatModel;
+    private ChatModel chatModel;
 
     /**
      * 扩展模式
@@ -117,7 +117,7 @@ public class QueryExpansionService {
                 扩展查询（用|分隔）：
                 """.formatted(query);
 
-        ChatClient chatClient = ChatClient.builder(dashscopeChatModel).build();
+        ChatClient chatClient = ChatClient.builder(chatModel).build();
         String response = chatClient.prompt()
                 .user(prompt)
                 .call()
