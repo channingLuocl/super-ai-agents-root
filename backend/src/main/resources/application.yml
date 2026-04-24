@@ -16,12 +16,6 @@ spring:
         enabled: false
       chat:
         completions-path: /v1/chat/completions
-        options:
-          model: MiniMax-M2.7
-    dashscope:
-      embedding:
-        options:
-          model: text-embedding-v3
     vectorstore:
       redis:
         index-name: spring_ai_index

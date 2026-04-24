@@ -1,5 +1,6 @@
 package com.example.superaiagents.rag;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -12,6 +13,7 @@ import redis.clients.jedis.JedisPooled;
  * 美食应用 Redis 向量存储配置。
  * 文档加载和增量同步由 {@link RagIndexSynchronizer} 负责。
  */
+@Slf4j
 @Configuration
 public class RedisVectorStoreConfig {
 
@@ -20,6 +22,9 @@ public class RedisVectorStoreConfig {
 
     @Value("${spring.data.redis.port}")
     private int redisPort;
+
+    @Value("${spring.ai.dashscope.embedding.options.model}")
+    private String embeddingModelName;
 
     /**
      * Jedis 客户端 Bean，供其他服务使用
@@ -35,6 +40,7 @@ public class RedisVectorStoreConfig {
     @Bean
     public VectorStore redisVectorStore(EmbeddingModel embeddingModel) {
         JedisPooled jedisPooled = jedisPooled();
+        log.info("向量 Embedding 模型: {}", embeddingModelName);
 
         return RedisVectorStore.builder(jedisPooled, embeddingModel)
                 .indexName("spring_ai_index")

@@ -3,6 +3,7 @@ package com.example.superaiagents.rag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,19 +26,24 @@ public class QueryRewriter {
 
     private final ChatClient chatClient;
 
-    public QueryRewriter(ChatModel chatModel) {
-        chatClient = ChatClient.builder(chatModel)
+    public QueryRewriter(@Qualifier("sidecarChatModel") ChatModel sidecarChatModel) {
+        chatClient = ChatClient.builder(sidecarChatModel)
                 .defaultSystem(QUERY_REWRITE_SYSTEM_PROMPT)
                 .build();
     }
 
     public String doQueryRewrite(String prompt) {
-        String response = chatClient.prompt()
-                .user("原始问题：" + prompt)
-                .call()
-                .content();
-        String rewritten = RagQueryTextCleaner.cleanSingleQuery(response, prompt);
-        log.info("查询改写: [{}] -> [{}]", prompt, rewritten);
-        return rewritten;
+        try {
+            String response = chatClient.prompt()
+                    .user("原始问题：" + prompt)
+                    .call()
+                    .content();
+            String rewritten = RagQueryTextCleaner.cleanSingleQuery(response, prompt);
+            log.info("查询改写: [{}] -> [{}]", prompt, rewritten);
+            return rewritten;
+        } catch (RuntimeException ex) {
+            log.warn("查询改写失败，回退原始查询: [{}], 原因: {}", prompt, ex.getMessage());
+            return prompt;
+        }
     }
 }

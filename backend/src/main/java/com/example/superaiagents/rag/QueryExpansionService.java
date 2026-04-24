@@ -4,6 +4,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 
@@ -21,8 +22,11 @@ import java.util.Set;
 @Slf4j
 public class QueryExpansionService {
 
-    @Resource
-    private ChatModel chatModel;
+    private final ChatModel sidecarChatModel;
+
+    public QueryExpansionService(@Qualifier("sidecarChatModel") ChatModel sidecarChatModel) {
+        this.sidecarChatModel = sidecarChatModel;
+    }
 
     /**
      * 扩展模式
@@ -117,11 +121,17 @@ public class QueryExpansionService {
                 原始查询：%s
                 """.formatted(query);
 
-        ChatClient chatClient = ChatClient.builder(chatModel).build();
-        String response = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        ChatClient chatClient = ChatClient.builder(sidecarChatModel).build();
+        String response;
+        try {
+            response = chatClient.prompt()
+                    .user(prompt)
+                    .call()
+                    .content();
+        } catch (RuntimeException ex) {
+            log.warn("查询扩展失败，回退原始查询: [{}], 原因: {}", query, ex.getMessage());
+            return query;
+        }
 
         return RagQueryTextCleaner.cleanExpandedQueries(response, query);
     }

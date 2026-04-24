@@ -5,8 +5,14 @@ spring:
       chat:
         options:
           model: MiniMax-M2.7
+        sidecar:
+          options:
+            model: MiniMax-M2
     dashscope:
       api-key: sk-b54295f09c8147308af17f975627f459
+      embedding:
+        options:
+          model: text-embedding-v3
     mcp:
       client:
         stdio:

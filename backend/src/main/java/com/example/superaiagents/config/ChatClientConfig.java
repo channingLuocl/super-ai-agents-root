@@ -1,5 +1,6 @@
 package com.example.superaiagents.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
@@ -10,8 +11,10 @@ import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicat
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -33,6 +36,7 @@ import java.time.Duration;
 /**
  * ChatClient 配置 - 将 ChatClient 暴露为 Spring Bean
  */
+@Slf4j
 @Configuration
 public class ChatClientConfig {
 
@@ -74,6 +78,44 @@ public class ChatClientConfig {
                 .observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
                 .build();
         observationConvention.ifAvailable(chatModel::setObservationConvention);
+        log.info("主对话模型: {}", chatProperties.getOptions().getModel());
+        return chatModel;
+    }
+
+    @Bean("sidecarChatModel")
+    public OpenAiChatModel sidecarChatModel(OpenAiConnectionProperties commonProperties,
+                                            OpenAiChatProperties chatProperties,
+                                            ToolCallingManager toolCallingManager,
+                                            RetryTemplate retryTemplate,
+                                            ResponseErrorHandler responseErrorHandler,
+                                            ObjectProvider<ObservationRegistry> observationRegistry,
+                                            ObjectProvider<ChatModelObservationConvention> observationConvention,
+                                            ObjectProvider<ToolExecutionEligibilityPredicate> toolExecutionEligibilityPredicate,
+                                            @Value("${spring.ai.openai.chat.sidecar.options.model}") String sidecarModel) {
+        OpenAiApi openAiApi = OpenAiApi.builder()
+                .baseUrl(firstText(chatProperties.getBaseUrl(), commonProperties.getBaseUrl()))
+                .apiKey(new SimpleApiKey(firstText(chatProperties.getApiKey(), commonProperties.getApiKey())))
+                .headers(buildHeaders(chatProperties, commonProperties))
+                .completionsPath(chatProperties.getCompletionsPath())
+                .embeddingsPath("/v1/embeddings")
+                .restClientBuilder(createRestClientBuilder())
+                .webClientBuilder(createWebClientBuilder())
+                .responseErrorHandler(responseErrorHandler)
+                .build();
+
+        OpenAiChatOptions sidecarOptions = OpenAiChatOptions.fromOptions(chatProperties.getOptions());
+        sidecarOptions.setModel(sidecarModel);
+
+        OpenAiChatModel chatModel = OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .defaultOptions(sidecarOptions)
+                .toolCallingManager(toolCallingManager)
+                .toolExecutionEligibilityPredicate(toolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+                .retryTemplate(retryTemplate)
+                .observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+                .build();
+        observationConvention.ifAvailable(chatModel::setObservationConvention);
+        log.info("旁路小模型: {}", sidecarOptions.getModel());
         return chatModel;
     }
 
