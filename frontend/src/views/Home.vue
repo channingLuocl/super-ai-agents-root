@@ -119,8 +119,17 @@
                 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant</span>
               </div>
               <div class="ai-bubble">
-                <div class="message-text" v-if="msg.content">{{ msg.content }}</div>
+                <div class="think-section" v-if="msg.think">
+                  <div class="think-header" @click="msg.thinkExpanded = !msg.thinkExpanded">
+                    <span class="think-icon">🤔</span>
+                    <span class="think-label">思考过程</span>
+                    <span class="think-toggle">{{ msg.thinkExpanded ? '收起' : '展开' }}</span>
+                  </div>
+                  <div class="think-content" v-show="msg.thinkExpanded" v-html="msg.think"></div>
+                </div>
+                <div class="message-text" v-if="msg.content" v-html="renderMarkdown(msg.content)"></div>
                 <div class="typing-dots" v-else><span></span><span></span><span></span></div>
+                <div class="streaming-cursor" v-if="msg.isStreaming && msg.content">|</div>
                 <div class="bubble-actions">
                   <button class="action-btn">
                     <span class="material-symbols-outlined">content_copy</span> 复制
@@ -192,6 +201,7 @@
 <script setup>
 import { ref, nextTick, onMounted, computed, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { marked } from 'marked'
 import AppLayout from '../components/AppLayout.vue'
 import { chatWithFood, chatWithFoodRag, getUserProfile } from '../api'
 import {
@@ -201,6 +211,12 @@ import {
   getConversation,
   updateConversationMessages
 } from '../store/chatStore'
+
+// Configure marked for safe rendering
+marked.setOptions({
+  breaks: true,
+  gfm: true
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -243,14 +259,49 @@ const scrollToBottom = () => {
   })
 }
 
-const addMessage = (content, isUser = false) => {
+const addMessage = (content, isUser = false, isStreaming = false) => {
+  const { think, mainContent } = parseThinkContent(content)
   messages.value.push({
     id: Date.now(),
-    content,
+    content: mainContent,
+    rawContent: content,
+    think: think,
+    thinkExpanded: false,
     isUser,
+    isStreaming,
     time: new Date()
   })
   scrollToBottom()
+}
+
+// Parse think content from AI response
+const parseThinkContent = (content) => {
+  if (!content) return { think: null, mainContent: '' }
+
+  const thinkRegex = /<think>([\s\S]*?)<\/think>/gi
+  const thinkMatches = []
+  let mainContent = content
+  let match
+
+  while ((match = thinkRegex.exec(content)) !== null) {
+    thinkMatches.push(match[1].trim())
+  }
+
+  if (thinkMatches.length > 0) {
+    mainContent = content.replace(thinkRegex, '')
+    return {
+      think: marked.parse(thinkMatches.join('\n\n')),
+      mainContent: mainContent.trim()
+    }
+  }
+
+  return { think: null, mainContent: content }
+}
+
+// Render markdown
+const renderMarkdown = (content) => {
+  if (!content) return ''
+  return marked.parse(content)
 }
 
 const saveCurrentChat = async () => {
@@ -302,7 +353,11 @@ const sendMessage = async () => {
     const aiMsg = {
       id: Date.now() + 1,
       content: '',
+      rawContent: '',
+      think: null,
+      thinkExpanded: true,
       isUser: false,
+      isStreaming: true,
       time: new Date()
     }
     // 保存用户消息到对话
@@ -313,7 +368,7 @@ const sendMessage = async () => {
   } else {
     addMessage(content, true)
     // 添加 AI 消息占位
-    addMessage('', false)
+    addMessage('', false, true)  // isStreaming = true
   }
 
   inputMessage.value = ''
@@ -333,12 +388,24 @@ const sendMessage = async () => {
     const data = event.data
     if (data && data !== '[DONE]') {
       if (messages.value[aiMsgIndex]) {
-        messages.value[aiMsgIndex].content += data
+        // Store raw content for think parsing
+        messages.value[aiMsgIndex].rawContent = (messages.value[aiMsgIndex].rawContent || '') + data
+        // Parse think content from accumulated raw content
+        const { think, mainContent } = parseThinkContent(messages.value[aiMsgIndex].rawContent)
+        messages.value[aiMsgIndex].think = think
+        messages.value[aiMsgIndex].content = mainContent
+        // If think was just discovered, expand it by default
+        if (think && !messages.value[aiMsgIndex].thinkExpanded) {
+          messages.value[aiMsgIndex].thinkExpanded = true
+        }
       }
       scrollToBottom()
     }
     if (data === '[DONE]') {
       isLoading.value = false
+      if (messages.value[aiMsgIndex]) {
+        messages.value[aiMsgIndex].isStreaming = false
+      }
       eventSource.close()
       eventSource = null
       await saveCurrentChat()
@@ -347,8 +414,11 @@ const sendMessage = async () => {
   }
 
   eventSource.onerror = async () => {
-    if (messages.value[aiMsgIndex] && messages.value[aiMsgIndex].content === '') {
-      messages.value[aiMsgIndex].content = '抱歉，连接出现错误，请重试。'
+    if (messages.value[aiMsgIndex]) {
+      messages.value[aiMsgIndex].isStreaming = false
+      if (messages.value[aiMsgIndex].content === '') {
+        messages.value[aiMsgIndex].content = '抱歉，连接出现错误，请重试。'
+      }
     }
     isLoading.value = false
     eventSource.close()
@@ -637,6 +707,171 @@ const toggleProfile = () => {
   line-height: 1.75;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* 思考过程区域 */
+.think-section {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed rgba(232, 90, 79, 0.2);
+}
+
+.think-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.think-header:hover {
+  color: var(--primary);
+}
+
+.think-icon {
+  font-size: 14px;
+}
+
+.think-label {
+  font-weight: 500;
+}
+
+.think-toggle {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.think-content {
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+  line-height: 1.6;
+}
+
+/* 思考内容内部markdown样式 */
+.think-content :deep(p) {
+  margin: 0 0 8px 0;
+}
+
+.think-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+/* 打字光标 */
+.streaming-cursor {
+  display: inline-block;
+  color: var(--primary);
+  font-weight: bold;
+  animation: blink 0.8s infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Markdown 样式 */
+.message-text :deep(h1),
+.message-text :deep(h2),
+.message-text :deep(h3),
+.message-text :deep(h4) {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.message-text :deep(h1) { font-size: 18px; }
+.message-text :deep(h2) { font-size: 16px; }
+.message-text :deep(h3) { font-size: 15px; }
+.message-text :deep(h4) { font-size: 14px; }
+
+.message-text :deep(p) {
+  margin: 0 0 12px 0;
+}
+
+.message-text :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.message-text :deep(ul),
+.message-text :deep(ol) {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.message-text :deep(li) {
+  margin: 4px 0;
+}
+
+.message-text :deep(code) {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Fira Code', 'Monaco', monospace;
+  font-size: 13px;
+}
+
+.message-text :deep(pre) {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.message-text :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.message-text :deep(blockquote) {
+  border-left: 3px solid var(--primary);
+  margin: 12px 0;
+  padding: 4px 12px;
+  color: var(--on-surface-variant);
+  background: rgba(232, 90, 79, 0.05);
+}
+
+.message-text :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+
+.message-text :deep(th),
+.message-text :deep(td) {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.message-text :deep(th) {
+  background: rgba(0, 0, 0, 0.03);
+  font-weight: 600;
+}
+
+.message-text :deep(a) {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.message-text :deep(img) {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.message-text :deep(hr) {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 16px 0;
 }
 
 /* 气泡操作 */
