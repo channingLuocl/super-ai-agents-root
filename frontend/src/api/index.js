@@ -11,6 +11,7 @@ const request = axios.create({
 
 export const connectSSE = (url, params) => {
   const queryString = Object.keys(params)
+    .filter(key => params[key] !== undefined && params[key] !== null && params[key] !== '')
     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
     .join('&')
 
@@ -22,6 +23,15 @@ export const connectSSE = (url, params) => {
 
 export const chatWithFood = (message, chatId = 'default') => {
   return connectSSE('/ai/food/chat/stream', { message, chatId })
+}
+
+export const chatWithFoodAgent = (message, chatId = 'default', location = null) => {
+  return connectSSE('/ai/food/agent/stream', {
+    message,
+    chatId,
+    longitude: location?.longitude,
+    latitude: location?.latitude
+  })
 }
 
 export const chatWithFoodRag = (message, chatId = 'default') => {
@@ -63,6 +73,7 @@ export const setCurrentChatIdApi = (chatId, userId = 'default') => {
 
 export default {
   chatWithFood,
+  chatWithFoodAgent,
   chatWithFoodRag,
   getUserProfile,
   getConversationsApi,

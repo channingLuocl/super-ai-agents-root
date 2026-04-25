@@ -53,6 +53,14 @@ public class AiController {
     }
 
     /**
+     * SSE 流式调用 AI 美食 Agent（工具调用）
+     */
+    @GetMapping(value = "/food/agent/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> doChatWithFoodAgentStream(String message, String chatId, String longitude, String latitude) {
+        return foodApp.doChatWithFoodAgentStream(message, chatId, longitude, latitude);
+    }
+
+    /**
      * 流式调用 Manus 超级智能体
      */
     @GetMapping("/manus/chat")

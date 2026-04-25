@@ -17,6 +17,15 @@ public class ToolRegistration {
     @Value("${search-api.api-key}")
     private String searchApiKey;
 
+    @Value("${amap.api-key:}")
+    private String amapApiKey;
+
+    @Value("${amap.restaurant.default-radius-meters:3000}")
+    private int defaultRestaurantRadiusMeters;
+
+    @Value("${amap.restaurant.default-limit:5}")
+    private int defaultRestaurantLimit;
+
     @Bean
     public ToolCallback[] allTools() {
         WebSearchTool webSearchTool = new WebSearchTool(searchApiKey);
@@ -31,6 +40,22 @@ public class ToolRegistration {
                 resourceDownloadTool,
                 pdfGenerationTool,
                 terminateTool
+        );
+    }
+
+    @Bean
+    public ToolCallback[] foodTools() {
+        WebSearchTool webSearchTool = new WebSearchTool(searchApiKey);
+        WebScrapingTool webScrapingTool = new WebScrapingTool();
+        NearbyRestaurantTool nearbyRestaurantTool = new NearbyRestaurantTool(
+                new AmapClient(amapApiKey),
+                defaultRestaurantRadiusMeters,
+                defaultRestaurantLimit
+        );
+        return ToolCallbacks.from(
+                nearbyRestaurantTool, //推荐附近餐厅
+                webSearchTool, //网页搜索
+                webScrapingTool //网页抓取
         );
     }
 }

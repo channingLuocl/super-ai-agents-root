@@ -45,6 +45,17 @@ public class FoodApp {
             - 如果知识库没有找到可靠内容，要明确说明没有找到对应菜谱，再给出通用建议。
             """;
 
+    private static final String TOOL_PROMPT_SUFFIX = """
+
+            【工具调用规则】
+            - 当用户询问附近、周边、餐厅、出去吃、外面吃、晚上吃什么且明显想找店时，优先调用 recommendNearbyRestaurants。
+            - 调用餐厅推荐工具时，必须使用系统消息中提供的 longitude 和 latitude，禁止编造坐标。
+            - 如果没有可用坐标，不要调用附近餐厅工具，要请用户开启定位或提供当前位置/商圈。
+            - 餐厅推荐结果要控制在 3-5 家，说明距离、评分、人均、营业时间和路线耗时；字段缺失时如实说明。
+            - 餐厅推荐信息来自高德地图，评分、人均、营业时间可能为空或不是实时最终状态，回答时保持谨慎。
+            - 最终回答禁止输出 <think>、</think> 或任何思考过程标签，只输出给用户看的内容。
+            """;
+
     private final ChatClient chatClient;
 
     @Value("${rag.similarity-threshold:0.5}")
@@ -65,9 +76,9 @@ public class FoodApp {
     @Resource
     private QueryExpansionService queryExpansionService;
 
-    //    AI调用工具能力
-    @Resource
-    private ToolCallback[] allTools;
+    //    AI 美食专用工具能力
+    @Resource(name = "foodTools")
+    private ToolCallback[] foodTools;
 
     // AI 调用 MCP 服务
     @Resource
@@ -273,13 +284,36 @@ public class FoodApp {
                 .system(systemPrompt)
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .toolCallbacks(allTools)
+                .toolCallbacks(foodTools)
                 .call()
                 .chatResponse();
         String content = response.getResult().getOutput().getText();
         log.info("工具调用的测试 content: \n{}", content);
         rememberAiMessage(conversationId, content);
         return content;
+    }
+
+    /**
+     * 5.1.1 AI 美食 Agent（工具调用 + SSE流式）
+     *
+     * @param message
+     * @param chatId
+     * @param longitude 用户当前位置经度
+     * @param latitude 用户当前位置纬度
+     * @return
+     */
+    public Flux<String> doChatWithFoodAgentStream(String message, String chatId, String longitude, String latitude) {
+        String conversationId = normalizeConversationId(chatId);
+        rememberUserMessage(conversationId, message);
+        String systemPrompt = buildToolSystemPrompt(conversationId, longitude, latitude);
+        return streamAndRemember(conversationId, chatClient
+                .prompt()
+                .system(systemPrompt)
+                .user(message)
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
+                .toolCallbacks(foodTools)
+                .stream()
+                .content());
     }
 
     /**
@@ -336,6 +370,24 @@ public class FoodApp {
 
     private String buildRagSystemPrompt(String conversationId) {
         return buildSystemPromptWithMemory(conversationId) + RAG_PROMPT_SUFFIX;
+    }
+
+    private String buildToolSystemPrompt(String conversationId, String longitude, String latitude) {
+        StringBuilder prompt = new StringBuilder(buildSystemPromptWithMemory(conversationId))
+                .append(TOOL_PROMPT_SUFFIX)
+                .append("\n【用户当前位置】\n");
+        if (hasCoordinate(longitude, latitude)) {
+            prompt.append("- longitude: ").append(longitude).append('\n')
+                    .append("- latitude: ").append(latitude).append('\n');
+        } else {
+            prompt.append("- 当前请求没有提供 longitude/latitude。\n");
+        }
+        return prompt.toString();
+    }
+
+    private boolean hasCoordinate(String longitude, String latitude) {
+        return longitude != null && !longitude.isBlank()
+                && latitude != null && !latitude.isBlank();
     }
 
     private QueryTransformer buildRagQueryTransformer() {

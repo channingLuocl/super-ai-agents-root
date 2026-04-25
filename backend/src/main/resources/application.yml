@@ -49,6 +49,12 @@ rag:
     reset-on-missing-manifest: true
     batch-size: 10
 
+amap:
+  api-key: 74d867a5094ef98218f6d87f1f1c8891
+  restaurant:
+    default-radius-meters: 3000
+    default-limit: 5
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

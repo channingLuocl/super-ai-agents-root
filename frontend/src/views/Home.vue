@@ -168,6 +168,15 @@
           >
             <span class="material-symbols-outlined">{{ useRag ? 'menu_book' : 'restaurant' }}</span>
           </button>
+          <button
+            class="location-btn"
+            :class="{ active: locationStatus === 'ready', warning: locationStatus === 'denied' || locationStatus === 'timeout' || locationStatus === 'unsupported' || locationStatus === 'insecure' }"
+            :title="locationButtonTitle"
+            :disabled="locationStatus === 'loading'"
+            @click="requestUserLocation"
+          >
+            <span class="material-symbols-outlined">{{ locationIcon }}</span>
+          </button>
           <textarea
             v-model="inputMessage"
             @keydown.enter.exact.prevent="sendMessage"
@@ -203,7 +212,7 @@ import { ref, nextTick, onMounted, computed, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import AppLayout from '../components/AppLayout.vue'
-import { chatWithFood, chatWithFoodRag, getUserProfile } from '../api'
+import { chatWithFoodAgent, chatWithFoodRag, getUserProfile } from '../api'
 import {
   getCurrentChatId,
   setCurrentChatId,
@@ -234,6 +243,8 @@ const isLoading = ref(false)
 const chatCanvas = ref(null)
 const currentChatId = ref(null)
 const useRag = ref(false)
+const userLocation = ref(null)
+const locationStatus = ref('idle')
 let eventSource = null
 
 // 用户画像
@@ -278,24 +289,39 @@ const addMessage = (content, isUser = false, isStreaming = false) => {
 const parseThinkContent = (content) => {
   if (!content) return { think: null, mainContent: '' }
 
+  const normalizedContent = content
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/＜/g, '<')
+    .replace(/＞/g, '>')
+    .replace(/<\s*think\s*>/gi, '<think>')
+    .replace(/<\s*\/\s*think\s*>/gi, '</think>')
   const thinkRegex = /<think>([\s\S]*?)<\/think>/gi
   const thinkMatches = []
-  let mainContent = content
+  let mainContent = normalizedContent
   let match
 
-  while ((match = thinkRegex.exec(content)) !== null) {
+  while ((match = thinkRegex.exec(normalizedContent)) !== null) {
     thinkMatches.push(match[1].trim())
   }
 
   if (thinkMatches.length > 0) {
-    mainContent = content.replace(thinkRegex, '')
+    mainContent = normalizedContent.replace(thinkRegex, '')
     return {
       think: marked.parse(thinkMatches.join('\n\n')),
       mainContent: mainContent.trim()
     }
   }
 
-  return { think: null, mainContent: content }
+  const openThinkIndex = normalizedContent.toLowerCase().indexOf('<think>')
+  if (openThinkIndex >= 0) {
+    return {
+      think: marked.parse(normalizedContent.slice(openThinkIndex + '<think>'.length).trim()),
+      mainContent: normalizedContent.slice(0, openThinkIndex).trim()
+    }
+  }
+
+  return { think: null, mainContent: normalizedContent }
 }
 
 // Render markdown
@@ -332,9 +358,91 @@ const sendQuickMessage = async (text) => {
   await sendMessage()
 }
 
+const shouldAttachLocation = (content) => {
+  return /地理位置|定位|位置|附近|周边|旁边|餐厅|饭店|出去吃|外面吃|哪儿吃|哪里吃|去哪吃|吃什么/.test(content)
+}
+
+const locationButtonTitle = computed(() => {
+  const titleMap = {
+    idle: '获取当前位置',
+    loading: '正在获取位置',
+    ready: '已获取当前位置',
+    denied: '定位权限被拒绝，请在浏览器站点设置中允许位置权限',
+    timeout: '定位超时，点击重试',
+    unsupported: '当前浏览器不支持定位',
+    insecure: '定位需要 HTTPS 或 localhost'
+  }
+  return titleMap[locationStatus.value] || titleMap.idle
+})
+
+const locationIcon = computed(() => {
+  if (locationStatus.value === 'loading') return 'progress_activity'
+  if (locationStatus.value === 'ready') return 'location_on'
+  if (locationStatus.value === 'denied' || locationStatus.value === 'timeout' || locationStatus.value === 'unsupported' || locationStatus.value === 'insecure') return 'location_disabled'
+  return 'my_location'
+})
+
+const requestUserLocation = () => {
+  if (typeof window !== 'undefined' && !window.isSecureContext) {
+    locationStatus.value = 'insecure'
+    return Promise.resolve(null)
+  }
+
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    locationStatus.value = 'unsupported'
+    return Promise.resolve(null)
+  }
+
+  if (userLocation.value) {
+    locationStatus.value = 'ready'
+    return Promise.resolve(userLocation.value)
+  }
+
+  locationStatus.value = 'loading'
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          longitude: position.coords.longitude,
+          latitude: position.coords.latitude
+        }
+        userLocation.value = location
+        locationStatus.value = 'ready'
+        resolve(location)
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          locationStatus.value = 'denied'
+        } else if (error.code === error.TIMEOUT) {
+          locationStatus.value = 'timeout'
+        } else {
+          locationStatus.value = 'idle'
+        }
+        resolve(null)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 5 * 60 * 1000
+      }
+    )
+  })
+}
+
+const getUserLocationForMessage = (content) => {
+  if (!shouldAttachLocation(content)) {
+    return Promise.resolve(null)
+  }
+  return requestUserLocation()
+}
+
 const sendMessage = async () => {
   const content = inputMessage.value.trim()
   if (!content || isLoading.value) return
+
+  const locationPromise = useRag.value
+    ? Promise.resolve(null)
+    : getUserLocationForMessage(content)
 
   // 如果是第一条消息，创建新对话
   if (messages.value.length === 0) {
@@ -355,7 +463,7 @@ const sendMessage = async () => {
       content: '',
       rawContent: '',
       think: null,
-      thinkExpanded: true,
+      thinkExpanded: false,
       isUser: false,
       isStreaming: true,
       time: new Date()
@@ -380,9 +488,11 @@ const sendMessage = async () => {
   streamingMessages = messages.value
   streamingAiMsgIndex = aiMsgIndex
 
+  const location = await locationPromise
+
   eventSource = useRag.value
     ? chatWithFoodRag(content, currentChatId.value)
-    : chatWithFood(content, currentChatId.value)
+    : chatWithFoodAgent(content, currentChatId.value, location)
 
   eventSource.onmessage = async (event) => {
     const data = event.data
@@ -394,10 +504,6 @@ const sendMessage = async () => {
         const { think, mainContent } = parseThinkContent(messages.value[aiMsgIndex].rawContent)
         messages.value[aiMsgIndex].think = think
         messages.value[aiMsgIndex].content = mainContent
-        // If think was just discovered, expand it by default
-        if (think && !messages.value[aiMsgIndex].thinkExpanded) {
-          messages.value[aiMsgIndex].thinkExpanded = true
-        }
       }
       scrollToBottom()
     }
@@ -995,7 +1101,8 @@ const toggleProfile = () => {
   margin-bottom: 6px;
 }
 
-.mode-switch-btn {
+.mode-switch-btn,
+.location-btn {
   padding: 6px;
   color: var(--on-surface-variant);
   margin-bottom: 6px;
@@ -1004,17 +1111,37 @@ const toggleProfile = () => {
   opacity: 0.5;
 }
 
-.mode-switch-btn:hover {
+.mode-switch-btn:hover,
+.location-btn:hover:not(:disabled) {
   opacity: 0.8;
 }
 
-.mode-switch-btn.active {
+.mode-switch-btn.active,
+.location-btn.active {
   color: var(--primary);
   opacity: 1;
 }
 
-.mode-switch-btn .material-symbols-outlined {
+.location-btn.warning {
+  color: #dc2626;
+  opacity: 0.9;
+}
+
+.location-btn:disabled {
+  cursor: wait;
+}
+
+.location-btn:disabled .material-symbols-outlined {
+  animation: spin 1s linear infinite;
+}
+
+.mode-switch-btn .material-symbols-outlined,
+.location-btn .material-symbols-outlined {
   font-size: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .input-textarea {
