@@ -31,7 +31,6 @@ public class AiController {
     public SseEmitter doChatWithFoodAgentStream(String message, String chatId, String longitude, String latitude) {
         return foodApp.doChatWithFoodAgentStream(message, chatId, longitude, latitude);
     }
-
     /**
      * 流式调用 Manus 超级智能体
      */
