@@ -21,10 +21,6 @@ export const connectSSE = (url, params) => {
   return eventSource
 }
 
-export const chatWithFood = (message, chatId = 'default') => {
-  return connectSSE('/ai/food/chat/stream', { message, chatId })
-}
-
 export const chatWithFoodAgent = (message, chatId = 'default', location = null) => {
   return connectSSE('/ai/food/agent/stream', {
     message,
@@ -32,10 +28,6 @@ export const chatWithFoodAgent = (message, chatId = 'default', location = null) 
     longitude: location?.longitude,
     latitude: location?.latitude
   })
-}
-
-export const chatWithFoodRag = (message, chatId = 'default') => {
-  return connectSSE('/ai/food/rag/stream', { message, chatId })
 }
 
 // 获取用户画像
@@ -72,9 +64,7 @@ export const setCurrentChatIdApi = (chatId, userId = 'default') => {
 }
 
 export default {
-  chatWithFood,
   chatWithFoodAgent,
-  chatWithFoodRag,
   getUserProfile,
   getConversationsApi,
   createConversationApi,

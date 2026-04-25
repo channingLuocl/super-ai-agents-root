@@ -161,14 +161,6 @@
       <div class="input-wrapper">
         <div class="input-box">
           <button
-            class="mode-switch-btn"
-            :class="{ active: useRag }"
-            :title="useRag ? '知识库问答模式' : 'AI 对话模式'"
-            @click="useRag = !useRag"
-          >
-            <span class="material-symbols-outlined">{{ useRag ? 'menu_book' : 'restaurant' }}</span>
-          </button>
-          <button
             class="location-btn"
             :class="{ active: locationStatus === 'ready', warning: locationStatus === 'denied' || locationStatus === 'timeout' || locationStatus === 'unsupported' || locationStatus === 'insecure' }"
             :title="locationButtonTitle"
@@ -180,7 +172,7 @@
           <textarea
             v-model="inputMessage"
             @keydown.enter.exact.prevent="sendMessage"
-            :placeholder="useRag ? '小迪正在翻找知识库...' : '问问小迪关于美食的问题...'"
+            placeholder="问问小迪关于美食的问题..."
             rows="1"
             class="input-textarea hide-scrollbar"
           ></textarea>
@@ -212,7 +204,7 @@ import { ref, nextTick, onMounted, computed, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import AppLayout from '../components/AppLayout.vue'
-import { chatWithFoodAgent, chatWithFoodRag, getUserProfile } from '../api'
+import { chatWithFoodAgent, getUserProfile } from '../api'
 import {
   getCurrentChatId,
   setCurrentChatId,
@@ -242,7 +234,6 @@ const inputMessage = ref('')
 const isLoading = ref(false)
 const chatCanvas = ref(null)
 const currentChatId = ref(null)
-const useRag = ref(false)
 const userLocation = ref(null)
 const locationStatus = ref('idle')
 let eventSource = null
@@ -359,7 +350,7 @@ const sendQuickMessage = async (text) => {
 }
 
 const shouldAttachLocation = (content) => {
-  return /地理位置|定位|位置|附近|周边|旁边|餐厅|饭店|出去吃|外面吃|哪儿吃|哪里吃|去哪吃|吃什么/.test(content)
+  return /地理位置|定位|位置|附近|周边|旁边|餐厅|饭店|出去吃|外面吃|哪儿吃|哪里吃|去哪吃/.test(content)
 }
 
 const locationButtonTitle = computed(() => {
@@ -440,9 +431,7 @@ const sendMessage = async () => {
   const content = inputMessage.value.trim()
   if (!content || isLoading.value) return
 
-  const locationPromise = useRag.value
-    ? Promise.resolve(null)
-    : getUserLocationForMessage(content)
+  const locationPromise = getUserLocationForMessage(content)
 
   // 如果是第一条消息，创建新对话
   if (messages.value.length === 0) {
@@ -490,9 +479,7 @@ const sendMessage = async () => {
 
   const location = await locationPromise
 
-  eventSource = useRag.value
-    ? chatWithFoodRag(content, currentChatId.value)
-    : chatWithFoodAgent(content, currentChatId.value, location)
+  eventSource = chatWithFoodAgent(content, currentChatId.value, location)
 
   eventSource.onmessage = async (event) => {
     const data = event.data
@@ -1101,7 +1088,6 @@ const toggleProfile = () => {
   margin-bottom: 6px;
 }
 
-.mode-switch-btn,
 .location-btn {
   padding: 6px;
   color: var(--on-surface-variant);
@@ -1111,12 +1097,10 @@ const toggleProfile = () => {
   opacity: 0.5;
 }
 
-.mode-switch-btn:hover,
 .location-btn:hover:not(:disabled) {
   opacity: 0.8;
 }
 
-.mode-switch-btn.active,
 .location-btn.active {
   color: var(--primary);
   opacity: 1;
@@ -1135,7 +1119,6 @@ const toggleProfile = () => {
   animation: spin 1s linear infinite;
 }
 
-.mode-switch-btn .material-symbols-outlined,
 .location-btn .material-symbols-outlined {
   font-size: 20px;
 }

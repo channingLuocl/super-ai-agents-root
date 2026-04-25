@@ -2,6 +2,7 @@ package com.example.superaiagents.tools;
 
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,18 +45,22 @@ public class ToolRegistration {
     }
 
     @Bean
-    public ToolCallback[] foodTools() {
+    public ToolCallback[] foodTools(VectorStore redisVectorStore) {
         WebSearchTool webSearchTool = new WebSearchTool(searchApiKey);
         WebScrapingTool webScrapingTool = new WebScrapingTool();
+        TerminateTool terminateTool = new TerminateTool();
         NearbyRestaurantTool nearbyRestaurantTool = new NearbyRestaurantTool(
                 new AmapClient(amapApiKey),
                 defaultRestaurantRadiusMeters,
                 defaultRestaurantLimit
         );
+        RecipeRecommendTool recipeRecommendTool = new RecipeRecommendTool(redisVectorStore);
         return ToolCallbacks.from(
                 nearbyRestaurantTool, //推荐附近餐厅
+                recipeRecommendTool, //推荐做饭菜谱
                 webSearchTool, //网页搜索
-                webScrapingTool //网页抓取
+                webScrapingTool, //网页抓取
+                terminateTool //多轮 agent 结束工具
         );
     }
 }

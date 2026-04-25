@@ -3,6 +3,7 @@ package com.example.superaiagents.tools;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 /**
  * 附近餐厅推荐工具。
  */
+@Slf4j
 public class NearbyRestaurantTool {
 
     private static final int MAX_RADIUS_METERS = 10_000;
@@ -43,6 +45,8 @@ public class NearbyRestaurantTool {
             @ToolParam(required = false, description = "Number of diners. Optional.") Integer peopleCount,
             @ToolParam(required = false, description = "Route mode. Use walking by default; driving is also supported.") String routeMode,
             @ToolParam(required = false, description = "Number of restaurants to return. Default 5, max 8.") Integer limit) {
+        log.info("工具调用开始[NearbyRestaurantTool]: longitude={}, latitude={}, keyword={}, radiusMeters={}, budget={}, peopleCount={}, routeMode={}, limit={}",
+                longitude, latitude, keyword, radiusMeters, budget, peopleCount, routeMode, limit);
         if (!hasValidCoordinate(longitude, latitude)) {
             return error("缺少有效经纬度，无法推荐附近餐厅。请让用户开启定位或提供当前位置。");
         }
@@ -69,6 +73,7 @@ public class NearbyRestaurantTool {
                 JSONObject result = baseResult(normalizedKeyword, safeRadius, safeLimit, budget, peopleCount, normalizedRouteMode, userLocation);
                 result.set("message", "附近没有找到匹配的餐厅，可以扩大搜索范围或换一个菜系关键词。");
                 result.set("restaurants", new JSONArray());
+                log.info("工具调用结束[NearbyRestaurantTool]: keyword={}, restaurants=0", normalizedKeyword);
                 return result.toString();
             }
 
@@ -84,10 +89,21 @@ public class NearbyRestaurantTool {
             JSONObject result = baseResult(normalizedKeyword, safeRadius, safeLimit, budget, peopleCount, normalizedRouteMode, userLocation);
             result.set("message", "success");
             result.set("restaurants", restaurants);
+            log.info("工具调用结束[NearbyRestaurantTool]: keyword={}, restaurants={}, names={}",
+                    normalizedKeyword, restaurants.size(), summarizeRestaurantNames(restaurants));
             return result.toString();
         } catch (RuntimeException ex) {
+            log.warn("工具调用失败[NearbyRestaurantTool]: {}", ex.getMessage());
             return error("餐厅推荐失败：" + ex.getMessage());
         }
+    }
+
+    private String summarizeRestaurantNames(JSONArray restaurants) {
+        return restaurants.stream()
+                .limit(3)
+                .map(item -> ((JSONObject) item).getStr("name"))
+                .reduce((left, right) -> left + "," + right)
+                .orElse("");
     }
 
     private JSONObject baseResult(
