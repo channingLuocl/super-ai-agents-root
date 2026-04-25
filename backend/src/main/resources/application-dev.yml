@@ -13,10 +13,6 @@ spring:
       embedding:
         options:
           model: text-embedding-v3
-    mcp:
-      client:
-        stdio:
-          servers-configuration: classpath:mcp-servers-dev.json
   data:
     redis:
       host: 127.0.0.1

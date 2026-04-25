@@ -18,7 +18,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -79,10 +78,6 @@ public class FoodApp {
     //    AI 美食专用工具能力
     @Resource(name = "foodTools")
     private ToolCallback[] foodTools;
-
-    // AI 调用 MCP 服务
-    @Resource
-    private ToolCallbackProvider toolCallbackProvider;
 
     // 记忆管理器
     @Resource
@@ -314,31 +309,6 @@ public class FoodApp {
                 .toolCallbacks(foodTools)
                 .stream()
                 .content());
-    }
-
-    /**
-     * 5.2 AI 美食（调用 MCP 服务）
-     *
-     * @param message
-     * @param chatId
-     * @return
-     */
-    public String doChatWithMcpTools(String message, String chatId) {
-        String conversationId = normalizeConversationId(chatId);
-        rememberUserMessage(conversationId, message);
-        String systemPrompt = buildSystemPromptWithMemory(conversationId);
-        ChatResponse chatResponse = chatClient
-                .prompt()
-                .system(systemPrompt)
-                .user(message)
-                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .toolCallbacks(toolCallbackProvider)
-                .call()
-                .chatResponse();
-        String content = chatResponse.getResult().getOutput().getText();
-        log.info("content: {}", content);
-        rememberAiMessage(conversationId, content);
-        return content;
     }
 
     private String normalizeConversationId(String chatId) {

@@ -13,11 +13,6 @@ spring:
       embedding:
         options:
           model: text-embedding-v3
-    mcp:
-      client:
-        request-timeout: 120s
-        stdio:
-          servers-configuration: classpath:mcp-servers-prod.json
   data:
     redis:
       host: redis
