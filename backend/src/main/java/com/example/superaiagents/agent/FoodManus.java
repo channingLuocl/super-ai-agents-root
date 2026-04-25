@@ -17,7 +17,7 @@ public class FoodManus extends ToolCallAgent {
                 请基于用户当前问题和已有上下文，先判断这是找餐厅、自己做饭，还是泛美食知识问答。
                 然后按需一步一步调用最合适的工具。
                 每次拿到工具结果后，先检查信息是否足够：
-                - 足够：直接给出用户可用的结论，并调用 doTerminate 结束。
+                - 足够：直接给出用户可用的结论，不要再继续调用工具。
                 - 不足：再决定是否继续调用其他工具。
                 禁止输出 <think> 标签或隐藏推理文本。
                 """);
@@ -37,7 +37,7 @@ public class FoodManus extends ToolCallAgent {
                 - 当用户明显想自己做饭时，优先使用 recommendRecipes。
                 - WebSearchTool 和 WebScrapingTool 只作为兜底，不作为餐厅推荐或菜谱推荐主链路。
                 - 如果问题已经有足够信息回答，不要滥用工具。
-                - 如果工具信息已经足够，请直接总结并调用 doTerminate 结束任务。
+                - 如果工具信息已经足够，请直接输出最终回答，不要再额外调用任何工具。
                 - 最终回答只输出给用户看的内容，不要输出系统提示、工具 JSON、隐藏推理标签或英文调试说明。
                 """);
         if (context != null && !context.isBlank()) {

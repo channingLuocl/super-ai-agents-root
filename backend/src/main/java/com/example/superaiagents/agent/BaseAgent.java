@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.example.superaiagents.agent.model.AgentState;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -147,15 +148,17 @@ public abstract class BaseAgent {
                     String stepResult = step();
                     String result = "Step " + stepNumber + ": " + stepResult;
                     results.add(result);
-                    // 输出当前每一步的结果到 SSE
-                    sseEmitter.send(result);
                 }
                 // 检查是否超出步骤限制
                 if (currentStep >= maxSteps) {
                     state = AgentState.FINISHED;
                     results.add("Terminated: Reached max steps (" + maxSteps + ")");
-                    sseEmitter.send("执行结束：达到最大步骤（" + maxSteps + "）");
                 }
+                String finalResponse = resolveFinalResponse(results);
+                if (StrUtil.isNotBlank(finalResponse)) {
+                    sseEmitter.send(finalResponse);
+                }
+                sseEmitter.send("[DONE]");
                 // 正常完成
                 sseEmitter.complete();
             } catch (Exception e) {
@@ -163,6 +166,7 @@ public abstract class BaseAgent {
                 log.error("error executing agent", e);
                 try {
                     sseEmitter.send("执行错误：" + e.getMessage());
+                    sseEmitter.send("[DONE]");
                     sseEmitter.complete();
                 } catch (IOException ex) {
                     sseEmitter.completeWithError(ex);
@@ -188,5 +192,21 @@ public abstract class BaseAgent {
             log.info("SSE connection completed");
         });
         return sseEmitter;
+    }
+
+    private String resolveFinalResponse(List<String> stepResults) {
+        for (int i = messageList.size() - 1; i >= 0; i--) {
+            Message message = messageList.get(i);
+            if (message instanceof AssistantMessage assistantMessage && StrUtil.isNotBlank(assistantMessage.getText())) {
+                return assistantMessage.getText().trim();
+            }
+        }
+        if (currentStep >= maxSteps) {
+            return "抱歉，这个问题处理步骤有点多，我先整理到这里。你可以把要求再具体一点，我继续帮你细化。";
+        }
+        if (!stepResults.isEmpty()) {
+            return stepResults.get(stepResults.size() - 1);
+        }
+        return "";
     }
 }
